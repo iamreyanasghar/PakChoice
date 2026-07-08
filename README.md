@@ -110,8 +110,3 @@ If you find this project useful, please:
 - 🐛 Report issues
 - 🤝 Contribute code
 - 📢 Share with others
-
----
-
-**🇵🇰 Made with ❤️ for Pakistan**
-```
