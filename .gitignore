@@ -61,9 +61,9 @@ htmlcov/
 *.cover
 .hypothesis/
 
-# Django migrations (uncomment if you want to ignore migrations)
-# */migrations/
-# !*/migrations/__init__.py
+# Django migrations
+*/migrations/
+!*/migrations/__init__.py
 
 # Docker
 docker-compose.override.yml
