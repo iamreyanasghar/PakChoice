@@ -1,1 +1,122 @@
-.aider*
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pythonenv*
+
+# Django
+*.log
+*.pot
+*.pyc
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media/
+/static/
+/staticfiles/
+/collected_static/
+
+# Media files
+media/
+uploads/
+uploaded_media/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+
+# Database
+*.db
+*.sqlite3
+*.sqlite
+
+# Logs
+logs/
+*.log
+debug.log
+
+# Testing
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+.cache/
+*.cover
+.hypothesis/
+
+# Django migrations (uncomment if you want to ignore migrations)
+# */migrations/
+# !*/migrations/__init__.py
+
+# Docker
+docker-compose.override.yml
+*.pid
+docker-compose.*.yml
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Virtual Environment
+lib/
+lib64/
+pyvenv.cfg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Poetry
+poetry.lock
+
+# PDM
+.pdm.toml
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# pyenv
+.python-version
+
+# VSCode
+.vscode/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Coverage reports
+coverage.xml
+*.cover
+*.py,cover
+.tox/
