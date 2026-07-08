@@ -1,0 +1,181 @@
+{% extends 'core/base.html' %}
+{% block title %}Search — PakChoice{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <h1 class="text-3xl font-black mb-1">Search</h1>
+    <p class="text-sm mb-8" style="color:var(--text-muted)">Search across categories, subcategories, and boycott products</p>
+
+    <form action="{% url 'search' %}" method="get" class="mb-10">
+        <div class="flex gap-3">
+            <input type="text" name="q" id="searchInput" value="{{ query }}"
+                placeholder="e.g. food, beverages, cola, nike, pampers..."
+                autofocus
+                class="form-input py-3 text-base flex-1 rounded-xl">
+            {% if query %}
+            <a href="{% url 'search' %}" class="flex items-center px-4 rounded-xl glass glass-hover transition text-sm font-medium" style="color:var(--text-muted)" title="Clear">✕</a>
+            {% endif %}
+            <button type="submit" class="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold transition flex-shrink-0">
+                Search
+            </button>
+        </div>
+    </form>
+
+    {% if query %}
+    <div class="flex items-center gap-3 mb-6 flex-wrap">
+        <p class="text-sm" style="color:var(--text-secondary)">
+            <strong>{{ total }}</strong> result{{ total|pluralize }} for "<span style="color:#22c55e">{{ query }}</span>"
+        </p>
+        <div class="flex gap-2 flex-wrap">
+            {% if categories %}<span class="text-xs px-2.5 py-1 rounded-full glass" style="color:var(--text-muted)">{{ categories|length }} categor{{ categories|length|pluralize:"y,ies" }}</span>{% endif %}
+            {% if subcategories %}<span class="text-xs px-2.5 py-1 rounded-full glass" style="color:var(--text-muted)">{{ subcategories|length }} subcategor{{ subcategories|length|pluralize:"y,ies" }}</span>{% endif %}
+            {% if products %}<span class="text-xs px-2.5 py-1 rounded-full glass" style="color:var(--text-muted)">{{ products|length }} product{{ products|length|pluralize }}</span>{% endif %}
+        </div>
+    </div>
+
+    {% if total == 0 %}
+    <div class="text-center py-20 glass rounded-2xl">
+        <div class="text-6xl mb-4">😔</div>
+        <p class="font-semibold text-lg">No results found</p>
+        <p class="text-sm mt-2" style="color:var(--text-muted)">Try "food", "nike", "cola", or "snacks"</p>
+    </div>
+    {% else %}
+
+    <!-- Tabs -->
+    <div class="flex gap-1 mb-6 glass rounded-xl p-1 w-fit flex-wrap">
+        <button onclick="showTab('all')" id="tab-all" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-green-600 text-white">
+            All ({{ total }})
+        </button>
+        {% if categories %}
+        <button onclick="showTab('categories')" id="tab-categories" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition" style="color:var(--text-muted)">
+            📁 Categories ({{ categories|length }})
+        </button>
+        {% endif %}
+        {% if subcategories %}
+        <button onclick="showTab('subcategories')" id="tab-subcategories" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition" style="color:var(--text-muted)">
+            📂 Subcategories ({{ subcategories|length }})
+        </button>
+        {% endif %}
+        {% if products %}
+        <button onclick="showTab('products')" id="tab-products" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition" style="color:var(--text-muted)">
+            🚫 Products ({{ products|length }})
+        </button>
+        {% endif %}
+    </div>
+
+    {% if categories %}
+    <div id="section-categories" class="result-section mb-8">
+        <h2 class="text-xs uppercase tracking-widest font-semibold mb-3 flex items-center gap-2" style="color:var(--text-muted)">
+            <span class="w-1 h-4 bg-green-500 rounded-full inline-block"></span> Categories
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {% for cat in categories %}
+            <a href="{% url 'category_detail' cat.slug %}" class="glass rounded-2xl p-5 flex items-center gap-4 glass-hover transition-all duration-300 card-glow group">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0 group-hover:scale-110 transition-transform"
+                     style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border)">{{ cat.icon }}</div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-bold group-hover:text-green-500 transition truncate">{{ cat.name }}</h3>
+                    <p class="text-xs mt-0.5" style="color:var(--text-muted)">{{ cat.subcategories.count }} subcategories</p>
+                    {% if cat.description %}<p class="text-xs mt-1 truncate" style="color:var(--text-muted)">{{ cat.description }}</p>{% endif %}
+                </div>
+                <svg class="w-4 h-4 flex-shrink-0 group-hover:translate-x-1 transition-all" style="color:var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if subcategories %}
+    <div id="section-subcategories" class="result-section mb-8">
+        <h2 class="text-xs uppercase tracking-widest font-semibold mb-3 flex items-center gap-2" style="color:var(--text-muted)">
+            <span class="w-1 h-4 bg-blue-500 rounded-full inline-block"></span> Subcategories
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {% for sub in subcategories %}
+            <a href="{% url 'subcategory_detail' sub.category.slug sub.slug %}" class="glass rounded-2xl p-5 flex items-center gap-4 glass-hover transition-all duration-300 card-glow group">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0 group-hover:scale-110 transition-transform"
+                     style="background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.25)">{{ sub.icon }}</div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-bold group-hover:text-green-500 transition truncate">{{ sub.name }}</h3>
+                    <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span class="text-xs" style="color:var(--text-muted)">{{ sub.category.icon }} {{ sub.category.name }}</span>
+                        <span style="color:var(--border)">·</span>
+                        <span class="text-xs" style="color:var(--text-muted)">{{ sub.products.count }} products</span>
+                    </div>
+                </div>
+                <svg class="w-4 h-4 flex-shrink-0 group-hover:translate-x-1 transition-all" style="color:var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if products %}
+    <div id="section-products" class="result-section mb-8">
+        <h2 class="text-xs uppercase tracking-widest font-semibold mb-3 flex items-center gap-2" style="color:var(--text-muted)">
+            <span class="w-1 h-4 bg-red-500 rounded-full inline-block"></span> Boycott Products
+        </h2>
+        <div class="space-y-3">
+            {% for product in products %}
+            <a href="{% url 'product_detail' product.slug %}" class="glass rounded-2xl p-5 flex items-center gap-5 glass-hover transition-all duration-300 card-glow block group">
+                {% if product.logo_url %}
+                <img src="{{ product.logo_url }}" alt="{{ product.name }}" class="w-14 h-14 object-contain rounded-xl p-2 flex-shrink-0"
+                     style="background:var(--bg-card); border:1px solid var(--border)">
+                {% else %}
+                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+                     style="background:var(--tag-red-bg); border:1px solid var(--tag-red-border)">🏭</div>
+                {% endif %}
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                        <h3 class="font-bold group-hover:text-green-500 transition">{{ product.name }}</h3>
+                        <span class="tag-red text-xs px-2 py-0.5 rounded-full">🚫 Boycott</span>
+                    </div>
+                    <p class="text-sm truncate" style="color:var(--text-muted)">
+                        {{ product.brand }} · {{ product.subcategory.category.icon }} {{ product.subcategory.category.name }} › {{ product.subcategory.name }}
+                    </p>
+                </div>
+                <span class="text-xs tag-green px-2.5 py-1 rounded-lg flex-shrink-0">{{ product.alternatives.count }} alt{{ product.alternatives.count|pluralize }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% endif %}
+    {% else %}
+    <div class="space-y-4">
+        <p class="text-sm" style="color:var(--text-muted)">Try searching for:</p>
+        <div class="flex flex-wrap gap-3">
+            {% for suggestion in suggestions %}
+            <a href="{% url 'search' %}?q={{ suggestion }}" class="px-4 py-2 rounded-xl glass glass-hover text-sm transition hover:text-green-500">
+                {{ suggestion }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(t => {
+        t.classList.remove('bg-green-600', 'text-white');
+        t.style.color = 'var(--text-muted)';
+    });
+    const active = document.getElementById('tab-' + tab);
+    active.classList.add('bg-green-600', 'text-white');
+    active.style.color = '';
+
+    ['categories','subcategories','products'].forEach(s => {
+        const el = document.getElementById('section-' + s);
+        if (el) el.style.display = (tab === 'all' || tab === s) ? 'block' : 'none';
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends 'core/base.html' %}
+{% block title %}Dashboard — PakChoice{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- Header -->
+    <div class="flex items-center gap-5 mb-10">
+        {% if user.profile.avatar %}
+            <img src="{{ user.profile.avatar.url }}" alt="avatar" class="w-16 h-16 rounded-2xl object-cover border-2 border-green-500">
+        {% else %}
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center text-white text-2xl font-black">
+                {{ user.profile.get_display_name|first|upper }}
+            </div>
+        {% endif %}
+        <div>
+            <h1 class="text-3xl font-black">{{ user.profile.get_display_name }}</h1>
+            <p class="text-sm mt-0.5" style="color:var(--text-muted)">@{{ user.username }} · Member since {{ user.date_joined|date:"M Y" }}</p>
+        </div>
+        <a href="{% url 'settings' %}" class="ml-auto px-4 py-2 rounded-xl glass glass-hover text-sm font-medium transition" style="color:var(--text-secondary)">
+            ⚙️ Settings
+        </a>
+    </div>
+
+    <!-- Stats row -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-10">
+        <div class="glass rounded-2xl p-5 text-center">
+            <p class="text-3xl font-black gradient-text">{{ alternatives|length }}</p>
+            <p class="text-sm mt-1" style="color:var(--text-muted)">Alternatives Added</p>
+        </div>
+        <div class="glass rounded-2xl p-5 text-center">
+            <p class="text-3xl font-black gradient-text">{{ votes|length }}</p>
+            <p class="text-sm mt-1" style="color:var(--text-muted)">Products Upvoted</p>
+        </div>
+        <div class="glass rounded-2xl p-5 text-center col-span-2 sm:col-span-1">
+            <p class="text-3xl font-black gradient-text">
+                {% with total=0 %}
+                    {% for alt in alternatives %}{% with total=total|add:alt.upvotes %}{% endwith %}{% endfor %}
+                    {{ alternatives|length }}
+                {% endwith %}
+            </p>
+            <p class="text-sm mt-1" style="color:var(--text-muted)">Total Upvotes Received</p>
+        </div>
+    </div>
+
+    <!-- Alternatives submitted -->
+    <div class="mb-10">
+        <h2 class="text-xl font-bold mb-4">🇵🇰 Alternatives You Submitted</h2>
+        {% if alternatives %}
+        <div class="space-y-3">
+            {% for alt in alternatives %}
+            <div class="glass rounded-2xl p-5 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                     style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border)">🇵🇰</div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <p class="font-semibold truncate">{{ alt.name }}</p>
+                        <span class="text-xs px-2 py-0.5 rounded-full
+                            {% if alt.status == 'approved' %}tag-green
+                            {% elif alt.status == 'pending' %}glass
+                            {% elif alt.status == 'needs_changes' %}glass
+                            {% else %}tag-red{% endif %}">
+                            {{ alt.get_status_display }}
+                        </span>
+                    </div>
+                    <p class="text-xs mt-0.5 truncate" style="color:var(--text-muted)">
+                        Alternative for <a href="{% url 'product_detail' alt.product.slug %}" class="hover:text-green-500 transition">{{ alt.product.name }}</a>
+                        · {{ alt.product.subcategory.category.name }}
+                    </p>
+                    {% if alt.rejection_reason and alt.status != 'approved' %}
+                    <p class="text-xs mt-1.5 px-2 py-1 rounded-lg" style="background:var(--tag-red-bg); color:#f87171; border:1px solid var(--tag-red-border)">
+                        💬 {{ alt.rejection_reason }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="flex items-center gap-1 text-sm flex-shrink-0" style="color:var(--text-muted)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                    {{ alt.upvotes }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="glass rounded-2xl p-10 text-center">
+            <p class="text-4xl mb-3">💡</p>
+            <p class="font-medium" style="color:var(--text-secondary)">No alternatives submitted yet</p>
+            <p class="text-sm mt-1" style="color:var(--text-muted)">Browse products and suggest Pakistani alternatives!</p>
+            <a href="{% url 'search' %}" class="inline-block mt-4 px-5 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-medium transition">Browse Products</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Upvoted alternatives -->
+    <div>
+        <h2 class="text-xl font-bold mb-4">👍 Alternatives You Upvoted</h2>
+        {% if votes %}
+        <div class="space-y-3">
+            {% for vote in votes %}
+            <div class="glass rounded-2xl p-5 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                     style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border)">✅</div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-semibold truncate">{{ vote.alternative.name }}</p>
+                    <p class="text-xs mt-0.5 truncate" style="color:var(--text-muted)">
+                        Alternative for <a href="{% url 'product_detail' vote.alternative.product.slug %}" class="hover:text-green-500 transition">{{ vote.alternative.product.name }}</a>
+                    </p>
+                </div>
+                <span class="tag-green text-xs px-2.5 py-1 rounded-lg flex-shrink-0">{{ vote.alternative.upvotes }} votes</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="glass rounded-2xl p-10 text-center">
+            <p class="text-4xl mb-3">👆</p>
+            <p class="font-medium" style="color:var(--text-secondary)">No upvotes yet</p>
+            <p class="text-sm mt-1" style="color:var(--text-muted)">Upvote Pakistani alternatives you trust!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

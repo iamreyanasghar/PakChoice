@@ -1,0 +1,214 @@
+/* =============================================
+   BycottPK — Main Stylesheet
+   Dark mode default, Light mode via .light class on <html>
+   ============================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ---------- CSS Variables ---------- */
+:root {
+  --bg-base:       #0a0a0a;
+  --bg-card:       rgba(255,255,255,0.03);
+  --bg-card-hover: rgba(255,255,255,0.06);
+  --bg-nav:        rgba(10,10,10,0.85);
+  --border:        rgba(255,255,255,0.08);
+  --border-hover:  rgba(34,197,94,0.35);
+  --text-primary:  #f1f5f9;
+  --text-secondary:#94a3b8;
+  --text-muted:    #475569;
+  --green-glow:    rgba(34,197,94,0.15);
+  --red-glow:      rgba(239,68,68,0.12);
+  --tag-red-bg:    rgba(239,68,68,0.15);
+  --tag-red-text:  #fca5a5;
+  --tag-red-border:rgba(239,68,68,0.3);
+  --tag-green-bg:  rgba(34,197,94,0.15);
+  --tag-green-text:#86efac;
+  --tag-green-border:rgba(34,197,94,0.3);
+  --gradient-border-inner: #111111;
+  --input-bg:      rgba(30,30,30,0.8);
+  --input-border:  #374151;
+  --shadow-green:  0 0 30px rgba(34,197,94,0.15);
+}
+
+html.light {
+  --bg-base:       #f8fafc;
+  --bg-card:       rgba(255,255,255,0.85);
+  --bg-card-hover: rgba(255,255,255,1);
+  --bg-nav:        rgba(248,250,252,0.92);
+  --border:        rgba(0,0,0,0.08);
+  --border-hover:  rgba(22,163,74,0.4);
+  --text-primary:  #0f172a;
+  --text-secondary:#475569;
+  --text-muted:    #94a3b8;
+  --green-glow:    rgba(22,163,74,0.08);
+  --red-glow:      rgba(220,38,38,0.06);
+  --tag-red-bg:    rgba(254,226,226,0.9);
+  --tag-red-text:  #dc2626;
+  --tag-red-border:rgba(220,38,38,0.25);
+  --tag-green-bg:  rgba(220,252,231,0.9);
+  --tag-green-text:#15803d;
+  --tag-green-border:rgba(22,163,74,0.25);
+  --gradient-border-inner: #ffffff;
+  --input-bg:      rgba(241,245,249,0.9);
+  --input-border:  #cbd5e1;
+  --shadow-green:  0 0 30px rgba(22,163,74,0.1);
+}
+
+/* ---------- Base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* ---------- Glass Cards ---------- */
+.glass {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.glass-hover:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-green);
+}
+
+.card-glow:hover {
+  box-shadow: var(--shadow-green);
+}
+
+/* ---------- Navbar ---------- */
+.nav-blur {
+  background: var(--bg-nav);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ---------- Gradient Text ---------- */
+.gradient-text {
+  background: linear-gradient(135deg, #22c55e, #86efac);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+html.light .gradient-text {
+  background: linear-gradient(135deg, #15803d, #16a34a);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ---------- Gradient Border ---------- */
+.gradient-border {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--gradient-border-inner), var(--gradient-border-inner)) padding-box,
+    linear-gradient(135deg, #22c55e, #86efac) border-box;
+}
+
+/* ---------- Hero Glow ---------- */
+.hero-glow {
+  background: radial-gradient(ellipse 80% 50% at 50% -20%, var(--green-glow), transparent);
+}
+
+/* ---------- Tags ---------- */
+.tag-red {
+  background: var(--tag-red-bg);
+  color: var(--tag-red-text);
+  border: 1px solid var(--tag-red-border);
+}
+
+.tag-green {
+  background: var(--tag-green-bg);
+  color: var(--tag-green-text);
+  border: 1px solid var(--tag-green-border);
+}
+
+/* ---------- Form Inputs ---------- */
+.form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  transition: border-color 0.2s, background 0.3s;
+  outline: none;
+}
+
+.form-input::placeholder { color: var(--text-muted); }
+.form-input:focus { border-color: #22c55e; }
+
+/* ---------- Scrollbar ---------- */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* ---------- Animations ---------- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.animate-fade-in  { animation: fadeIn  0.5s ease-in-out; }
+.animate-slide-up { animation: slideUp 0.4s ease-out; }
+
+/* ---------- Theme Toggle Button ---------- */
+.theme-toggle {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.625rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  font-size: 1rem;
+}
+.theme-toggle:hover {
+  border-color: var(--border-hover);
+  transform: scale(1.1);
+}
+
+/* ---------- Breadcrumb ---------- */
+.breadcrumb { color: var(--text-muted); }
+.breadcrumb a { color: var(--text-secondary); transition: color 0.2s; }
+.breadcrumb a:hover { color: #22c55e; }
+.breadcrumb .current { color: var(--text-primary); }
+
+/* ---------- Light mode text overrides ---------- */
+html.light .text-gray-100 { color: #0f172a; }
+html.light .text-gray-300 { color: #334155; }
+html.light .text-gray-400 { color: #475569; }
+html.light .text-gray-500 { color: #64748b; }
+html.light .text-gray-600 { color: #94a3b8; }
+html.light .text-white    { color: #0f172a; }
+html.light .border-gray-700 { border-color: #e2e8f0; }
+html.light .border-gray-800 { border-color: #e2e8f0; }
+html.light .bg-gray-800\/60 { background: rgba(241,245,249,0.9); }
+html.light .placeholder-gray-500::placeholder { color: #94a3b8; }
+
+/* ---------- Page favicon emoji fallback ---------- */
+.site-favicon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

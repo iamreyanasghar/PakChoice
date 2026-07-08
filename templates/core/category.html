@@ -1,0 +1,61 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ category.name }} — PakChoice{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <nav class="breadcrumb flex items-center gap-2 text-sm mb-8">
+        <a href="{% url 'home' %}">Home</a><span>›</span>
+        <span class="current">{{ category.name }}</span>
+    </nav>
+
+    <div class="flex items-center gap-5 mb-12">
+        <div class="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl"
+             style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border)">
+            {{ category.icon }}
+        </div>
+        <div>
+            <h1 class="text-4xl font-black">{{ category.name }}</h1>
+            {% if category.description %}<p class="mt-1" style="color:var(--text-secondary)">{{ category.description }}</p>{% endif %}
+            <p class="text-sm mt-1" style="color:var(--text-muted)">{{ subcategories|length }} subcategories</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for sub in subcategories %}
+        <a href="{% url 'subcategory_detail' category.slug sub.slug %}"
+           class="glass rounded-2xl p-6 transition-all duration-300 card-glow glass-hover group block">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform"
+                     style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border)">
+                    {{ sub.icon }}
+                </div>
+                <div>
+                    <h3 class="font-bold group-hover:text-green-500 transition">{{ sub.name }}</h3>
+                    <p class="text-xs" style="color:var(--text-muted)">{{ sub.products.count }} products</p>
+                </div>
+            </div>
+            {% with sub.products.all|slice:":3" as preview %}
+            {% if preview %}
+            <div class="flex flex-wrap gap-1.5">
+                {% for p in preview %}
+                <span class="text-xs px-2 py-1 rounded-lg tag-red">{{ p.name }}</span>
+                {% endfor %}
+                {% if sub.products.count > 3 %}
+                <span class="text-xs px-2 py-1 rounded-lg glass" style="color:var(--text-muted)">+{{ sub.products.count|add:"-3" }} more</span>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endwith %}
+            <div class="mt-4 flex items-center gap-1 text-xs font-medium" style="color:#22c55e">
+                View products
+                <svg class="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+        {% empty %}
+        <div class="col-span-3 text-center py-16" style="color:var(--text-muted)">No subcategories yet.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

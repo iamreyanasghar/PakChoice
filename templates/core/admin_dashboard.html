@@ -1,0 +1,76 @@
+{% extends 'core/base.html' %}
+{% block title %}Moderation Dashboard — PakChoice{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-black">🛡️ Moderation Dashboard</h1>
+            <p class="text-sm mt-1" style="color:var(--text-muted)">Review and manage user-submitted alternatives</p>
+        </div>
+        <a href="/admin/" class="px-4 py-2 rounded-xl glass glass-hover text-sm font-medium transition" style="color:var(--text-secondary)">
+            Django Admin ↗
+        </a>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-10">
+        <div class="glass rounded-2xl p-5 text-center">
+            <p class="text-3xl font-black" style="color:#f59e0b">{{ stats.pending }}</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Pending</p>
+        </div>
+        <div class="glass rounded-2xl p-5 text-center">
+            <p class="text-3xl font-black" style="color:#f87171">{{ stats.needs_changes }}</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Needs Changes</p>
+        </div>
+        <div class="glass rounded-2xl p-5 text-center">
+            <p class="text-3xl font-black gradient-text">{{ stats.approved_week }}</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Approved (7d)</p>
+        </div>
+        <div class="glass rounded-2xl p-5 text-center">
+            <p class="text-3xl font-black" style="color:#ef4444">{{ stats.rejected_week }}</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Rejected (7d)</p>
+        </div>
+        <div class="glass rounded-2xl p-5 text-center col-span-2 sm:col-span-1">
+            <p class="text-3xl font-black" style="color:var(--text-secondary)">{{ stats.total }}</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Total</p>
+        </div>
+    </div>
+
+    <!-- Pending queue -->
+    <h2 class="text-xl font-bold mb-4">⏳ Pending Review ({{ pending|length }})</h2>
+
+    {% if pending %}
+    <div class="space-y-4">
+        {% for alt in pending %}
+        <div class="glass rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                    <span class="font-bold text-lg">{{ alt.name }}</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full glass" style="color:var(--text-muted)">{{ alt.brand }}</span>
+                </div>
+                <p class="text-sm" style="color:var(--text-muted)">
+                    For: <strong style="color:var(--text-secondary)">{{ alt.product.name }}</strong>
+                    · Submitted by <strong style="color:var(--text-secondary)">{{ alt.added_by.username|default:"Anonymous" }}</strong>
+                    · {{ alt.created_at|timesince }} ago
+                </p>
+                {% if alt.description %}
+                <p class="text-sm mt-2 line-clamp-2" style="color:var(--text-secondary)">{{ alt.description }}</p>
+                {% endif %}
+            </div>
+            <a href="{% url 'moderate_alternative' alt.pk %}"
+               class="flex-shrink-0 px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition text-center">
+                Review →
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="glass rounded-2xl p-12 text-center">
+        <p class="text-4xl mb-3">✅</p>
+        <p class="font-medium" style="color:var(--text-secondary)">All caught up! No pending submissions.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

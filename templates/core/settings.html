@@ -1,0 +1,135 @@
+{% extends 'core/base.html' %}
+{% block title %}Settings — PakChoice{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <div class="flex items-center gap-3 mb-10">
+        <a href="{% url 'dashboard' %}" class="theme-toggle" title="Back to dashboard">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <h1 class="text-3xl font-black">Settings</h1>
+    </div>
+
+    <!-- Avatar -->
+    <div class="glass rounded-3xl p-7 mb-6">
+        <h2 class="text-lg font-bold mb-5">Profile Picture</h2>
+        <div class="flex items-center gap-6 mb-6">
+            {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" alt="avatar" class="w-20 h-20 rounded-2xl object-cover border-2 border-green-500">
+            {% else %}
+                <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center text-white text-3xl font-black flex-shrink-0">
+                    {{ user.profile.get_display_name|first|upper }}
+                </div>
+            {% endif %}
+            <div>
+                <p class="font-medium">{{ user.profile.get_display_name }}</p>
+                <p class="text-sm mt-0.5" style="color:var(--text-muted)">JPG, PNG or GIF · Max 5MB</p>
+            </div>
+        </div>
+        <form method="post" enctype="multipart/form-data" class="flex items-center gap-3 flex-wrap">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="avatar">
+            {{ avatar_form.avatar }}
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition">
+                Upload Photo
+            </button>
+        </form>
+    </div>
+
+    <!-- Profile Info -->
+    <div class="glass rounded-3xl p-7 mb-6">
+        <h2 class="text-lg font-bold mb-5">Profile Information</h2>
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="profile">
+            <div>
+                <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">Display Name</label>
+                {{ profile_form.display_name }}
+                {% if profile_form.display_name.errors %}
+                <p class="tag-red text-xs mt-2 px-3 py-1.5 rounded-lg">{{ profile_form.display_name.errors.0 }}</p>
+                {% endif %}
+            </div>
+            <div>
+                <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">Email Address</label>
+                {{ profile_form.email }}
+                {% if profile_form.email.errors %}
+                <p class="tag-red text-xs mt-2 px-3 py-1.5 rounded-lg">{{ profile_form.email.errors.0 }}</p>
+                {% endif %}
+            </div>
+            <div>
+                <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">Username (cannot be changed)</label>
+                <p class="form-input opacity-60 cursor-not-allowed select-none">@{{ user.username }}</p>
+            </div>
+            <button type="submit" class="px-6 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition">
+                Save Changes
+            </button>
+        </form>
+    </div>
+
+    <!-- Change Password -->
+    <div class="glass rounded-3xl p-7 mb-6">
+        <h2 class="text-lg font-bold mb-5">Change Password</h2>
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="password">
+            {% for field in password_form %}
+            <div>
+                <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                <p class="tag-red text-xs mt-2 px-3 py-1.5 rounded-lg">{{ field.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+            <div class="rounded-xl px-4 py-3" style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border)">
+                <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--tag-green-text)">Password must:</p>
+                <div class="flex items-center gap-2 text-xs mb-1" style="color:var(--tag-green-text)"><span class="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"></span> Be at least 8 characters</div>
+                <div class="flex items-center gap-2 text-xs mb-1" style="color:var(--tag-green-text)"><span class="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"></span> Not be entirely numeric</div>
+                <div class="flex items-center gap-2 text-xs mb-1" style="color:var(--tag-green-text)"><span class="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"></span> Not be too similar to your username</div>
+                <div class="flex items-center gap-2 text-xs" style="color:var(--tag-green-text)"><span class="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"></span> Not be a commonly used password</div>
+            </div>
+            <button type="submit" class="px-6 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition">
+                Update Password
+            </button>
+        </form>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="rounded-3xl p-7" style="background:var(--tag-red-bg); border:1px solid var(--tag-red-border)">
+        <h2 class="text-lg font-bold mb-1" style="color:var(--tag-red-text)">Danger Zone</h2>
+        <p class="text-sm mb-5" style="color:var(--tag-red-text); opacity:0.8">Permanently delete your account and all your data. This cannot be undone.</p>
+        <button onclick="document.getElementById('deleteModal').classList.remove('hidden')"
+                class="px-5 py-2.5 rounded-xl text-sm font-semibold transition"
+                style="background:rgba(239,68,68,0.2); color:var(--tag-red-text); border:1px solid var(--tag-red-border)">
+            🗑️ Delete My Account
+        </button>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4" style="background:rgba(0,0,0,0.75)">
+    <div class="glass rounded-3xl p-8 max-w-sm w-full">
+        <p class="text-4xl text-center mb-4">⚠️</p>
+        <h3 class="text-xl font-black text-center mb-2">Delete Account?</h3>
+        <p class="text-sm text-center mb-6" style="color:var(--text-muted)">
+            This will permanently delete your account, all alternatives you submitted, and your votes. This cannot be undone.
+        </p>
+        <div class="flex gap-3">
+            <button onclick="document.getElementById('deleteModal').classList.add('hidden')"
+                    class="flex-1 py-3 rounded-xl glass glass-hover text-sm font-semibold transition">
+                Cancel
+            </button>
+            <form method="post" action="{% url 'delete_account' %}" class="flex-1">
+                {% csrf_token %}
+                <button type="submit" class="w-full py-3 rounded-xl text-sm font-semibold transition text-white"
+                        style="background:rgba(239,68,68,0.85)">
+                    Yes, Delete
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'core/base.html' %}
+{% block title %}Review: {{ alt.name }} — PakChoice{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <div class="flex items-center gap-3 mb-8">
+        <a href="{% url 'admin_dashboard' %}" class="text-sm glass px-3 py-1.5 rounded-lg glass-hover transition" style="color:var(--text-secondary)">
+            ← Back to queue
+        </a>
+        <span class="text-sm px-3 py-1 rounded-full
+            {% if alt.status == 'approved' %}tag-green
+            {% elif alt.status == 'rejected' %}tag-red
+            {% elif alt.status == 'needs_changes' %}glass
+            {% else %}glass{% endif %}">
+            {{ alt.get_status_display }}
+        </span>
+    </div>
+
+    <h1 class="text-2xl font-black mb-1">Review Submission</h1>
+    <p class="text-sm mb-8" style="color:var(--text-muted)">
+        Submitted by <strong style="color:var(--text-secondary)">{{ alt.added_by.username|default:"Anonymous" }}</strong>
+        · {{ alt.created_at|date:"M d, Y H:i" }}
+        {% if alt.reviewed_by %}· Last reviewed by <strong style="color:var(--text-secondary)">{{ alt.reviewed_by.username }}</strong> on {{ alt.reviewed_at|date:"M d, Y" }}{% endif %}
+    </p>
+
+    <!-- Submission info (read-only preview) -->
+    <div class="glass rounded-2xl p-6 mb-6">
+        <h2 class="text-sm font-semibold uppercase tracking-wider mb-4" style="color:var(--text-muted)">Submission Details</h2>
+        <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div>
+                <dt class="text-xs uppercase tracking-wider mb-0.5" style="color:var(--text-muted)">For Product</dt>
+                <dd class="font-medium">{{ alt.product.name }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs uppercase tracking-wider mb-0.5" style="color:var(--text-muted)">Category</dt>
+                <dd>{{ alt.product.subcategory.category.name }} › {{ alt.product.subcategory.name }}</dd>
+            </div>
+            {% if alt.website %}
+            <div class="col-span-2">
+                <dt class="text-xs uppercase tracking-wider mb-0.5" style="color:var(--text-muted)">Website</dt>
+                <dd><a href="{{ alt.website }}" target="_blank" rel="noopener" style="color:#22c55e">{{ alt.website }}</a></dd>
+            </div>
+            {% endif %}
+            {% if alt.image_url %}
+            <div class="col-span-2">
+                <dt class="text-xs uppercase tracking-wider mb-0.5" style="color:var(--text-muted)">Image URL</dt>
+                <dd class="truncate">{{ alt.image_url }}</dd>
+            </div>
+            {% endif %}
+        </dl>
+    </div>
+
+    <!-- Editable moderation form -->
+    <form method="post" class="space-y-5">
+        {% csrf_token %}
+
+        <div class="glass rounded-2xl p-6 space-y-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wider mb-2" style="color:var(--text-muted)">Edit Content</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Name *</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<p class="tag-red text-xs mt-1 px-2 py-1 rounded">{{ form.name.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Brand *</label>
+                    {{ form.brand }}
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Description</label>
+                {{ form.description }}
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Image URL</label>
+                    {{ form.image_url }}
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Website</label>
+                    {{ form.website }}
+                </div>
+            </div>
+        </div>
+
+        <div class="glass rounded-2xl p-6 space-y-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wider mb-2" style="color:var(--text-muted)">Admin Notes & Feedback</h2>
+            <div>
+                <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">
+                    Admin Notes <span class="normal-case" style="color:var(--text-muted)">(internal, not shown to user)</span>
+                </label>
+                {{ form.admin_notes }}
+            </div>
+            <div>
+                <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">
+                    Rejection / Change Reason <span class="normal-case" style="color:var(--text-muted)">(emailed to user on reject or needs-changes)</span>
+                </label>
+                {{ form.rejection_reason }}
+            </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="flex flex-wrap gap-3 pt-2">
+            <button type="submit" name="action" value="approve"
+                class="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold transition">
+                ✅ Approve
+            </button>
+            <button type="submit" name="action" value="needs_changes"
+                class="px-6 py-3 rounded-xl font-semibold transition glass glass-hover"
+                style="color:var(--text-secondary)">
+                🔄 Request Changes
+            </button>
+            <button type="submit" name="action" value="reject"
+                class="px-6 py-3 rounded-xl font-semibold transition"
+                style="background:var(--tag-red-bg); color:#f87171; border:1px solid var(--tag-red-border)">
+                ❌ Reject
+            </button>
+            <button type="submit" name="action" value="save"
+                class="px-6 py-3 rounded-xl font-semibold transition glass glass-hover ml-auto"
+                style="color:var(--text-muted)">
+                💾 Save Only
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
