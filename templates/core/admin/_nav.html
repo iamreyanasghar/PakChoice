@@ -1,0 +1,44 @@
+{% comment %}
+Admin sidebar navigation. Usage: {% include 'core/admin/_nav.html' with active='categories' %}
+Possible active values: overview, moderation, categories, subcategories, products, alternatives, users, verifications
+{% endcomment %}
+<div class="lg:w-56 flex-shrink-0">
+    <div class="glass rounded-2xl p-4 admin-sidebar space-y-1 sticky top-24">
+        <a href="{% url 'admin_overview' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition
+            {% if active == 'overview' %}" style="background:var(--tag-green-bg); color:var(--tag-green-text); border:1px solid var(--tag-green-border)"
+            {% else %}" style="color:var(--text-secondary)"{% endif %}>
+            📊 Overview
+        </a>
+        <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition
+            {% if active == 'moderation' %}" style="background:var(--tag-green-bg); color:var(--tag-green-text); border:1px solid var(--tag-green-border)"
+            {% else %}" style="color:var(--text-secondary)"{% endif %}>
+            ✅ Moderation
+        </a>
+        <a href="{% url 'admin_category_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition
+            {% if active == 'categories' %}" style="background:var(--tag-green-bg); color:var(--tag-green-text); border:1px solid var(--tag-green-border)"
+            {% else %}" style="color:var(--text-secondary)"{% endif %}>
+            📁 Categories
+        </a>
+        <a href="{% url 'admin_subcategory_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition
+            {% if active == 'subcategories' %}" style="background:var(--tag-green-bg); color:var(--tag-green-text); border:1px solid var(--tag-green-border)"
+            {% else %}" style="color:var(--text-secondary)"{% endif %}>
+            📂 Subcategories
+        </a>
+        <a href="{% url 'admin_product_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition
+            {% if active == 'products' %}" style="background:var(--tag-green-bg); color:var(--tag-green-text); border:1px solid var(--tag-green-border)"
+            {% else %}" style="color:var(--text-secondary)"{% endif %}>
+            🏷️ Products
+        </a>
+        <a href="{% url 'admin_alternative_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition
+            {% if active == 'alternatives' %}" style="background:var(--tag-green-bg); color:var(--tag-green-text); border:1px solid var(--tag-green-border)"
+            {% else %}" style="color:var(--text-secondary)"{% endif %}>
+            🇵🇰 Alternatives
+        </a>
+        <hr class="my-2" style="border-color:var(--border)">
+        <a href="{% url 'admin_user_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition
+            {% if active == 'users' %}" style="background:var(--tag-green-bg); color:var(--tag-green-text); border:1px solid var(--tag-green-border)"
+            {% else %}" style="color:var(--text-secondary)"{% endif %}>
+            👥 Users
+        </a>
+    </div>
+</div>

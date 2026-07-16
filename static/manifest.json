@@ -1,0 +1,51 @@
+
+{
+  "name": "PakChoice",
+  "short_name": "PakChoice",
+  "description": "Discover Pakistani alternatives to boycott products. Support local Pakistani businesses.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/img/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Search Products",
+      "short_name": "Search",
+      "description": "Search for boycott products and alternatives",
+      "url": "/search/",
+      "icons": [
+        {
+          "src": "/static/img/logo.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Browse Categories",
+      "short_name": "Categories",
+      "description": "Browse product categories",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/static/img/logo.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

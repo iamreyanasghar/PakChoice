@@ -1,0 +1,55 @@
+{% extends 'core/base.html' %}
+{% block title %}Categories — Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+        {% include 'core/admin/_nav.html' with active='categories' %}
+
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-black">📁 Categories</h1>
+                <a href="{% url 'admin_category_create' %}" class="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition">
+                    + New Category
+                </a>
+            </div>
+
+            <div class="glass rounded-2xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr style="border-bottom:1px solid var(--border)">
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Icon</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Name</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Slug</th>
+                                <th class="text-center px-5 py-3 font-semibold" style="color:var(--text-muted)">Subcategories</th>
+                                <th class="text-center px-5 py-3 font-semibold" style="color:var(--text-muted)">Order</th>
+                                <th class="text-right px-5 py-3 font-semibold" style="color:var(--text-muted)">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in categories %}
+                            <tr style="border-bottom:1px solid var(--border)" class="hover:bg-white/5 transition">
+                                <td class="px-5 py-4 text-xl">{{ cat.icon }}</td>
+                                <td class="px-5 py-4 font-medium">{{ cat.name }}</td>
+                                <td class="px-5 py-4" style="color:var(--text-muted)">{{ cat.slug }}</td>
+                                <td class="px-5 py-4 text-center">{{ cat.sub_count }}</td>
+                                <td class="px-5 py-4 text-center">{{ cat.order }}</td>
+                                <td class="px-5 py-4 text-right">
+                                    <a href="{% url 'admin_category_edit' cat.pk %}" class="inline-block px-3 py-1.5 rounded-lg glass glass-hover text-xs font-medium transition" style="color:var(--text-secondary)">Edit</a>
+                                    <a href="{% url 'admin_category_delete' cat.pk %}" class="inline-block px-3 py-1.5 rounded-lg text-xs font-medium transition ml-1" style="color:#f87171; border:1px solid rgba(239,68,68,0.3)" onclick="return confirm('Delete {{ cat.name }}?')">Delete</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="px-5 py-12 text-center" style="color:var(--text-muted)">No categories yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

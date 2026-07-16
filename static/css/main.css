@@ -15,7 +15,7 @@
   --border-hover:  rgba(34,197,94,0.35);
   --text-primary:  #f1f5f9;
   --text-secondary:#94a3b8;
-  --text-muted:    #475569;
+  --text-muted:    #64748b;
   --green-glow:    rgba(34,197,94,0.15);
   --red-glow:      rgba(239,68,68,0.12);
   --tag-red-bg:    rgba(239,68,68,0.15);
@@ -39,7 +39,7 @@ html.light {
   --border-hover:  rgba(22,163,74,0.4);
   --text-primary:  #0f172a;
   --text-secondary:#475569;
-  --text-muted:    #94a3b8;
+  --text-muted:    #475569;
   --green-glow:    rgba(22,163,74,0.08);
   --red-glow:      rgba(220,38,38,0.06);
   --tag-red-bg:    rgba(254,226,226,0.9);
@@ -83,6 +83,19 @@ body {
 
 .card-glow:hover {
   box-shadow: var(--shadow-green);
+}
+
+/* ---------- Dropdown Menu ---------- */
+.dropdown {
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+}
+
+html.light .dropdown {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--border);
 }
 
 /* ---------- Navbar ---------- */

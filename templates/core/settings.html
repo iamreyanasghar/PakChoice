@@ -18,7 +18,7 @@
         <h2 class="text-lg font-bold mb-5">Profile Picture</h2>
         <div class="flex items-center gap-6 mb-6">
             {% if profile.avatar %}
-                <img src="{{ profile.avatar.url }}" alt="avatar" class="w-20 h-20 rounded-2xl object-cover border-2 border-green-500">
+                <img src="{{ profile.avatar.url }}" alt="{{ user.profile.get_display_name }} avatar" class="w-20 h-20 rounded-2xl object-cover border-2 border-green-500">
             {% else %}
                 <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center text-white text-3xl font-black flex-shrink-0">
                     {{ user.profile.get_display_name|first|upper }}
@@ -29,7 +29,15 @@
                 <p class="text-sm mt-0.5" style="color:var(--text-muted)">JPG, PNG or GIF · Max 5MB</p>
             </div>
         </div>
-        <form method="post" enctype="multipart/form-data" class="flex items-center gap-3 flex-wrap">
+        {% if profile.avatar %}
+        <form method="post" class="flex items-center gap-3 flex-wrap">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="avatar">
+            <input type="hidden" name="remove_avatar" value="1">
+            <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold transition" style="color:#f87171; border:1px solid rgba(239,68,68,0.3)">Remove Photo</button>
+        </form>
+        {% endif %}
+        <form method="post" enctype="multipart/form-data" class="flex items-center gap-3 flex-wrap mt-3">
             {% csrf_token %}
             <input type="hidden" name="action" value="avatar">
             {{ avatar_form.avatar }}
@@ -114,22 +122,27 @@
     <div class="glass rounded-3xl p-8 max-w-sm w-full">
         <p class="text-4xl text-center mb-4">⚠️</p>
         <h3 class="text-xl font-black text-center mb-2">Delete Account?</h3>
-        <p class="text-sm text-center mb-6" style="color:var(--text-muted)">
+        <p class="text-sm text-center mb-4" style="color:var(--text-muted)">
             This will permanently delete your account, all alternatives you submitted, and your votes. This cannot be undone.
         </p>
-        <div class="flex gap-3">
-            <button onclick="document.getElementById('deleteModal').classList.add('hidden')"
-                    class="flex-1 py-3 rounded-xl glass glass-hover text-sm font-semibold transition">
-                Cancel
-            </button>
-            <form method="post" action="{% url 'delete_account' %}" class="flex-1">
-                {% csrf_token %}
-                <button type="submit" class="w-full py-3 rounded-xl text-sm font-semibold transition text-white"
+        <p class="text-xs text-center mb-4" style="color:var(--tag-red-text)">
+            Type your password to confirm:
+        </p>
+        <form id="deleteAccountForm" method="post" action="{% url 'delete_account' %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="password" name="confirm_password" placeholder="Enter your password" required
+                   class="form-input w-full" autocomplete="current-password">
+            <div class="flex gap-3">
+                <button type="button" onclick="document.getElementById('deleteModal').classList.add('hidden')"
+                        class="flex-1 py-3 rounded-xl glass glass-hover text-sm font-semibold transition">
+                    Cancel
+                </button>
+                <button type="submit" class="flex-1 py-3 rounded-xl text-sm font-semibold transition text-white"
                         style="background:rgba(239,68,68,0.85)">
                     Yes, Delete
                 </button>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

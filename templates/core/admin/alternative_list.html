@@ -1,0 +1,65 @@
+{% extends 'core/base.html' %}
+{% block title %}Alternatives — Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+        {% include 'core/admin/_nav.html' with active='alternatives' %}
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-black">🇵🇰 All Alternatives</h1>
+                <div class="flex gap-2">
+                    <a href="{% url 'admin_alternative_list' %}" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if not current_status %}bg-green-600 text-white{% else %}glass{% endif %}">All</a>
+                    <a href="{% url 'admin_alternative_list' %}?status=pending" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if current_status == 'pending' %}bg-green-600 text-white{% else %}glass{% endif %}">Pending</a>
+                    <a href="{% url 'admin_alternative_list' %}?status=approved" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if current_status == 'approved' %}bg-green-600 text-white{% else %}glass{% endif %}">Approved</a>
+                    <a href="{% url 'admin_alternative_list' %}?status=rejected" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if current_status == 'rejected' %}bg-green-600 text-white{% else %}glass{% endif %}">Rejected</a>
+                    <a href="{% url 'admin_alternative_list' %}?status=needs_changes" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if current_status == 'needs_changes' %}bg-green-600 text-white{% else %}glass{% endif %}">Changes</a>
+                </div>
+            </div>
+            <div class="glass rounded-2xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead><tr style="border-bottom:1px solid var(--border)">
+                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Name / Brand</th>
+                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">For Product</th>
+                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Submitted By</th>
+                            <th class="text-center px-5 py-3 font-semibold" style="color:var(--text-muted)">Status</th>
+                            <th class="text-center px-5 py-3 font-semibold" style="color:var(--text-muted)">Votes</th>
+                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Date</th>
+                            <th class="text-right px-5 py-3 font-semibold" style="color:var(--text-muted)">Actions</th>
+                        </tr></thead>
+                        <tbody>
+                            {% for alt in alternatives %}
+                            <tr style="border-bottom:1px solid var(--border)" class="hover:bg-white/5 transition">
+                                <td class="px-5 py-4">
+                                    <p class="font-medium">{{ alt.name }}</p>
+                                    <p class="text-xs" style="color:var(--text-muted)">{{ alt.brand }}</p>
+                                </td>
+                                <td class="px-5 py-4" style="color:var(--text-muted)">{{ alt.product.name }}</td>
+                                <td class="px-5 py-4" style="color:var(--text-muted)">{{ alt.added_by.username|default:"—" }}</td>
+                                <td class="px-5 py-4 text-center">
+                                    <span class="text-xs px-2 py-0.5 rounded-full
+                                        {% if alt.status == 'approved' %}tag-green
+                                        {% elif alt.status == 'pending' %}glass
+                                        {% elif alt.status == 'needs_changes' %}glass
+                                        {% else %}tag-red{% endif %}">
+                                        {{ alt.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4 text-center">{{ alt.upvotes }}</td>
+                                <td class="px-5 py-4 text-xs" style="color:var(--text-muted)">{{ alt.created_at|date:"M d, Y" }}</td>
+                                <td class="px-5 py-4 text-right">
+                                    <a href="{% url 'moderate_alternative' alt.pk %}" class="inline-block px-3 py-1.5 rounded-lg glass glass-hover text-xs font-medium transition" style="color:var(--text-secondary)">Review</a>
+                                    <a href="{% url 'admin_alternative_delete' alt.pk %}" class="inline-block px-3 py-1.5 rounded-lg text-xs font-medium transition ml-1" style="color:#f87171; border:1px solid rgba(239,68,68,0.3)">Delete</a>
+                                </td>
+                            </tr>
+                            {% empty %}<tr><td colspan="7" class="px-5 py-12 text-center" style="color:var(--text-muted)">No alternatives found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

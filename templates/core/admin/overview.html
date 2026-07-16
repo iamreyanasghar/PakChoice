@@ -1,0 +1,133 @@
+{% extends 'core/base.html' %}
+{% block title %}Admin Panel — PakChoice{% endblock %}
+
+{% block extra_css %}
+<style>
+.admin-sidebar a { transition: all 0.2s; }
+.admin-sidebar a:hover { transform: translateX(4px); }
+.admin-stat-card { transition: all 0.2s; }
+.admin-stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(34,197,94,0.15); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-black">🛡️ Admin Panel</h1>
+            <p class="text-sm mt-1" style="color:var(--text-muted)">Manage your PakChoice data — categories, products, users & more</p>
+        </div>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+        <!-- Sidebar -->
+        <div class="lg:w-56 flex-shrink-0">
+            <div class="glass rounded-2xl p-4 admin-sidebar space-y-1 sticky top-24">
+                <a href="{% url 'admin_overview' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold" style="background:var(--tag-green-bg); color:var(--tag-green-text); border:1px solid var(--tag-green-border)">
+                    📊 Overview
+                </a>
+                <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition hover:text-green-500" style="color:var(--text-secondary)">
+                    ✅ Moderation
+                </a>
+                <a href="{% url 'admin_category_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition hover:text-green-500" style="color:var(--text-secondary)">
+                    📁 Categories
+                </a>
+                <a href="{% url 'admin_subcategory_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition hover:text-green-500" style="color:var(--text-secondary)">
+                    📂 Subcategories
+                </a>
+                <a href="{% url 'admin_product_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition hover:text-green-500" style="color:var(--text-secondary)">
+                    🏷️ Products
+                </a>
+                <a href="{% url 'admin_alternative_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition hover:text-green-500" style="color:var(--text-secondary)">
+                    🇵🇰 Alternatives
+                </a>
+                <hr class="my-2" style="border-color:var(--border)">
+                <a href="{% url 'admin_user_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition hover:text-green-500" style="color:var(--text-secondary)">
+                    👥 Users
+                </a>
+                <hr class="my-2" style="border-color:var(--border)">
+                <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition hover:text-green-500" style="color:var(--text-muted)">
+                    ← Back to Moderation
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 min-w-0">
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+                <div class="glass rounded-2xl p-5 text-center admin-stat-card">
+                    <p class="text-3xl font-black gradient-text">{{ stats.categories }}</p>
+                    <p class="text-xs mt-1" style="color:var(--text-muted)">Categories</p>
+                </div>
+                <div class="glass rounded-2xl p-5 text-center admin-stat-card">
+                    <p class="text-3xl font-black" style="color:#60a5fa">{{ stats.subcategories }}</p>
+                    <p class="text-xs mt-1" style="color:var(--text-muted)">Subcategories</p>
+                </div>
+                <div class="glass rounded-2xl p-5 text-center admin-stat-card">
+                    <p class="text-3xl font-black" style="color:#f59e0b">{{ stats.products }}</p>
+                    <p class="text-xs mt-1" style="color:var(--text-muted)">Products</p>
+                </div>
+                <div class="glass rounded-2xl p-5 text-center admin-stat-card">
+                    <p class="text-3xl font-black" style="color:#22c55e">{{ stats.products_verified }}</p>
+                    <p class="text-xs mt-1" style="color:var(--text-muted)">Verified</p>
+                </div>
+                <div class="glass rounded-2xl p-5 text-center admin-stat-card">
+                    <p class="text-3xl font-black" style="color:#a78bfa">{{ stats.alternatives }}</p>
+                    <p class="text-xs mt-1" style="color:var(--text-muted)">Total Alternatives</p>
+                </div>
+                <div class="glass rounded-2xl p-5 text-center admin-stat-card">
+                    <p class="text-3xl font-black" style="color:#fbbf24">{{ stats.alternatives_pending }}</p>
+                    <p class="text-xs mt-1" style="color:var(--text-muted)">Pending</p>
+                </div>
+                <div class="glass rounded-2xl p-5 text-center admin-stat-card">
+                    <p class="text-3xl font-black" style="color:#34d399">{{ stats.alternatives_approved }}</p>
+                    <p class="text-xs mt-1" style="color:var(--text-muted)">Approved</p>
+                </div>
+                <div class="glass rounded-2xl p-5 text-center admin-stat-card">
+                    <p class="text-3xl font-black" style="color:#818cf8">{{ stats.users }}</p>
+                    <p class="text-xs mt-1" style="color:var(--text-muted)">Users</p>
+                </div>
+            </div>
+
+            <!-- Recent Submissions -->
+            <div>
+                <h2 class="text-xl font-bold mb-4">🕐 Recent Submissions</h2>
+                {% if recent_alternatives %}
+                <div class="space-y-3">
+                    {% for alt in recent_alternatives %}
+                    <div class="glass rounded-2xl p-5 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                             style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border)">🇵🇰</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <p class="font-semibold truncate">{{ alt.name }}</p>
+                                <span class="text-xs px-2 py-0.5 rounded-full
+                                    {% if alt.status == 'approved' %}tag-green
+                                    {% elif alt.status == 'pending' %}glass
+                                    {% elif alt.status == 'needs_changes' %}glass
+                                    {% else %}tag-red{% endif %}">
+                                    {{ alt.get_status_display }}
+                                </span>
+                            </div>
+                            <p class="text-xs mt-0.5" style="color:var(--text-muted)">
+                                For <strong>{{ alt.product.name }}</strong>
+                                · by {{ alt.added_by.username|default:"Anonymous" }}
+                                · {{ alt.created_at|timesince }} ago
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="glass rounded-2xl p-10 text-center">
+                    <p class="text-4xl mb-3">📭</p>
+                    <p style="color:var(--text-secondary)">No alternatives submitted yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -7,7 +7,7 @@
     <!-- Header -->
     <div class="flex items-center gap-5 mb-10">
         {% if user.profile.avatar %}
-            <img src="{{ user.profile.avatar.url }}" alt="avatar" class="w-16 h-16 rounded-2xl object-cover border-2 border-green-500">
+            <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.get_display_name }} avatar" class="w-16 h-16 rounded-2xl object-cover border-2 border-green-500">
         {% else %}
             <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center text-white text-2xl font-black">
                 {{ user.profile.get_display_name|first|upper }}

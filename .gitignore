@@ -18,15 +18,17 @@ pythonenv*
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-/media/
-/static/
 /staticfiles/
 /collected_static/
 
-# Media files
-media/
-uploads/
-uploaded_media/
+# Static files - ignore user-uploaded images, keep logo
+/static/img/users/
+/static/img/media/
+
+# Database
+*.db
+*.sqlite3
+*.sqlite
 
 # Environment variables
 .env

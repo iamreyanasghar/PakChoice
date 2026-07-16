@@ -45,28 +45,48 @@ git clone https://github.com/yourusername/pakistan-boycott-alternatives.git
 cd pakistan-boycott-alternatives
 ```
 
-### 2. Install Dependencies
+### 2. Create Virtual Environment (Recommended)
+```bash
+python -m venv venv
+source venv/bin/activate  
+
+# On Windows: 
+venv\Scripts\activate
+```
+
+### 3. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Apply Migrations
+### 4. Configure Environment Variables
+Create a `.env` file in the project root:
+```env
+DEBUG=True
+SECRET_KEY=your-secret-key-here
+ALLOWED_HOSTS=localhost,127.0.0.1
+```
+
+### 5. Apply Migrations
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-### 4. Create Superuser
+### 6. Create Superuser
 ```bash
 python manage.py createsuperuser
 ```
 
-### 5. Run Development Server
+### 7. Run Development Server
 ```bash
 python manage.py runserver
 ```
 
 Visit `http://127.0.0.1:8000` in your browser.
+
+### 8. Access Admin Panel
+Visit `http://127.0.0.1:8000/admin-panel/` to manage products, categories, and user submissions.
 
 ## 🔒 User Roles
 

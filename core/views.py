@@ -7,6 +7,8 @@ from django.db.models import Q, F, Count
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
+from .decorators import rate_limit
+from .security_logger import log_security_event
 from .models import Category, SubCategory, BoycottProduct, PakistaniAlternative, AlternativeVote, UserProfile
 from .forms import RegisterForm, LoginForm, AlternativeForm, AvatarForm, ProfileSettingsForm, PasswordChangeForm, ModerationForm
 
@@ -21,8 +23,8 @@ def home(request):
     total_alternatives = PakistaniAlternative.objects.filter(status='approved').count()
     return render(request, 'core/home.html', {
         'categories': categories,
-        'total_products': total_products,
-        'total_alternatives': total_alternatives,
+        'total_products': int(round(total_products / 10.0)) * 10,
+        'total_alternatives': int(round(total_alternatives / 10.0)) * 10,
     })
 
 
@@ -56,7 +58,6 @@ def product_detail(request, slug):
     })
 
 
-@login_required
 @require_POST
 def add_alternative(request, slug):
     product = get_object_or_404(BoycottProduct, slug=slug)
@@ -74,8 +75,8 @@ def add_alternative(request, slug):
     return redirect('product_detail', slug=slug)
 
 
-@login_required
 @require_POST
+@rate_limit(key_prefix='upvote', limit=30, period=60)
 def upvote_alternative(request, pk):
     alt = get_object_or_404(PakistaniAlternative, pk=pk, status='approved')
     vote, created = AlternativeVote.objects.get_or_create(user=request.user, alternative=alt)
@@ -114,32 +115,45 @@ def search(request):
 
 def register_view(request):
     if request.user.is_authenticated:
-        return redirect('home')
+        return redirect('dashboard')
     form = RegisterForm(request.POST or None)
     if form.is_valid():
         user = form.save()
+
         # Save display_name to profile (signal already created the profile)
         display_name = form.cleaned_data.get('display_name', '').strip()
         if display_name:
             user.profile.display_name = display_name
             user.profile.save()
+
+        # Log the user in and redirect to dashboard
         login(request, user)
-        messages.success(request, '✅ Account created! Welcome aboard.')
-        return redirect('home')
+        messages.success(request, '✅ Account created successfully! Welcome to PakChoice.')
+        return redirect('dashboard')
+
     return render(request, 'core/auth.html', {'form': form, 'mode': 'register'})
 
 
+@rate_limit(key_prefix='login', limit=5, period=300)
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('home')
+        return redirect('dashboard')
+
     form = LoginForm(request, request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        login(request, form.get_user())
+        user = form.get_user()
+        login(request, user)
+        log_security_event('login_success', f'User {user.username} logged in successfully', user=user, request=request)
         messages.success(request, '✅ Logged in successfully. Welcome back!')
         next_url = request.POST.get('next') or request.GET.get('next', '')
         if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
             return redirect(next_url)
-        return redirect('home')
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username', '')
+        log_security_event('login_failed', f'Failed login attempt for username: {username}', request=request)
+    
     return render(request, 'core/auth.html', {'form': form, 'mode': 'login'})
 
 
@@ -149,7 +163,6 @@ def logout_view(request):
     return redirect('home')
 
 
-@login_required
 def dashboard(request):
     alternatives = PakistaniAlternative.objects.filter(
         added_by=request.user
@@ -160,6 +173,14 @@ def dashboard(request):
     return render(request, 'core/dashboard.html', {
         'alternatives': alternatives,
         'votes': votes,
+    })
+
+
+def profile_view(request):
+    """Display user profile information (read-only)."""
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    return render(request, 'core/profile.html', {
+        'profile': profile,
     })
 
 
@@ -182,6 +203,7 @@ def admin_dashboard(request):
 @user_passes_test(_staff_required, login_url='/login/')
 def moderate_alternative(request, pk):
     alt = get_object_or_404(PakistaniAlternative, pk=pk)
+    old_status = alt.status
     form = ModerationForm(instance=alt)
 
     if request.method == 'POST':
@@ -194,13 +216,13 @@ def moderate_alternative(request, pk):
                 alt.reviewed_by = request.user
                 alt.reviewed_at = timezone.now()
             alt.save()
+
             messages.success(request, f'✅ Submission {alt.status}.')
             return redirect('admin_dashboard')
 
     return render(request, 'core/moderate.html', {'alt': alt, 'form': form})
 
 
-@login_required
 def settings_view(request):
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
@@ -219,6 +241,13 @@ def settings_view(request):
                 return redirect('settings')
 
         elif action == 'avatar':
+            if request.POST.get('remove_avatar'):
+                if profile.avatar:
+                    profile.avatar.delete()
+                    profile.avatar = None
+                    profile.save()
+                    messages.success(request, '✅ Avatar removed successfully.')
+                return redirect('settings')
             avatar_form = AvatarForm(request.POST, request.FILES, instance=profile)
             if avatar_form.is_valid():
                 avatar_form.save()
@@ -241,11 +270,28 @@ def settings_view(request):
     })
 
 
-@login_required
 @require_POST
 def delete_account(request):
+    from django.contrib.auth import authenticate
+    
     user = request.user
+    confirm_password = request.POST.get('confirm_password', '')
+    
+    # Verify password
+    if not confirm_password:
+        log_security_event('account_delete_failed', f'Account deletion attempt without password for user {user.username}', user=user, request=request)
+        messages.error(request, 'Please enter your password to confirm account deletion.')
+        return redirect('settings')
+    
+    authenticated_user = authenticate(request, username=user.username, password=confirm_password)
+    if authenticated_user is None:
+        log_security_event('account_delete_failed', f'Account deletion attempt with wrong password for user {user.username}', user=user, request=request)
+        messages.error(request, 'Incorrect password. Account deletion cancelled.')
+        return redirect('settings')
+    
+    username = user.username
     logout(request)
     user.delete()
+    log_security_event('account_deleted', f'Account deleted for user {username}', request=request)
     messages.success(request, 'Your account has been deleted.')
     return redirect('home')

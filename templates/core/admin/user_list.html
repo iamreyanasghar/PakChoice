@@ -1,0 +1,61 @@
+{% extends 'core/base.html' %}
+{% block title %}Users — Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+        {% include 'core/admin/_nav.html' with active='users' %}
+        <div class="flex-1 min-w-0">
+            <h1 class="text-2xl font-black mb-6">👥 Users ({{ users|length }})</h1>
+            <div class="glass rounded-2xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead><tr style="border-bottom:1px solid var(--border)">
+                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">User</th>
+                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Email</th>
+                            <th class="text-center px-5 py-3 font-semibold" style="color:var(--text-muted)">Staff</th>
+                            <th class="text-center px-5 py-3 font-semibold" style="color:var(--text-muted)">Alts</th>
+                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Joined</th>
+                            <th class="text-right px-5 py-3 font-semibold" style="color:var(--text-muted)">Actions</th>
+                        </tr></thead>
+                        <tbody>
+                            {% for u in users %}
+                            <tr style="border-bottom:1px solid var(--border)" class="hover:bg-white/5 transition">
+                                <td class="px-5 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                            {% if u.profile.display_name %}{{ u.profile.display_name|first|upper }}{% else %}{{ u.username|first|upper }}{% endif %}
+                                        </div>
+                                        <div>
+                                            <p class="font-medium">{{ u.profile.display_name|default:u.username }}</p>
+                                            <p class="text-xs" style="color:var(--text-muted)">@{{ u.username }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-5 py-4 text-xs" style="color:var(--text-muted)">{{ u.email|default:"—" }}</td>
+                                <td class="px-5 py-4 text-center">{% if u.is_staff %}<span class="text-green-500">✅</span>{% else %}<span style="color:var(--text-muted)">—</span>{% endif %}</td>
+                                <td class="px-5 py-4 text-center">{{ u.alt_count }}</td>
+                                <td class="px-5 py-4 text-xs" style="color:var(--text-muted)">{{ u.date_joined|date:"M d, Y" }}</td>
+                                <td class="px-5 py-4 text-right">
+                                    <a href="{% url 'admin_user_edit' u.pk %}" class="inline-block px-3 py-1.5 rounded-lg glass glass-hover text-xs font-medium transition" style="color:var(--text-secondary)">Edit</a>
+                                    <form method="post" action="{% url 'admin_user_toggle_staff' u.pk %}" class="inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="inline-block px-3 py-1.5 rounded-lg text-xs font-medium transition ml-1" style="color:{% if u.is_staff %}#f87171{% else %}#22c55e{% endif %}; border:1px solid {% if u.is_staff %}rgba(239,68,68,0.3){% else %}rgba(34,197,94,0.3){% endif %}">
+                                            {% if u.is_staff %}Revoke Staff{% else %}Make Staff{% endif %}
+                                        </button>
+                                    </form>
+                                    {% if u != request.user %}
+                                    <a href="{% url 'admin_user_delete' u.pk %}" class="inline-block px-3 py-1.5 rounded-lg text-xs font-medium transition ml-1" style="color:#f87171; border:1px solid rgba(239,68,68,0.3)">Delete</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}<tr><td colspan="6" class="px-5 py-12 text-center" style="color:var(--text-muted)">No users found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

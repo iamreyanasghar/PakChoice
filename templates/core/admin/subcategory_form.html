@@ -1,0 +1,38 @@
+{% extends 'core/base.html' %}
+{% block title %}{% if mode == 'create' %}New Subcategory{% else %}Edit Subcategory{% endif %} — Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-12">
+    <a href="{% url 'admin_subcategory_list' %}" class="text-sm glass px-3 py-1.5 rounded-lg glass-hover transition inline-block mb-6" style="color:var(--text-secondary)">← Back to Subcategories</a>
+    <h1 class="text-2xl font-black mb-6">{% if mode == 'create' %}📂 New Subcategory{% else %}✏️ Edit: {{ subcategory.name }}{% endif %}</h1>
+    <form method="post" class="glass rounded-3xl p-8 space-y-5">
+        {% csrf_token %}
+        <div>
+            <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Category *</label>
+            <select name="category" required class="form-input">
+                <option value="">Select category...</option>
+                {% for cat in categories %}
+                <option value="{{ cat.pk }}" {% if mode == 'edit' and subcategory.category.pk == cat.pk %}selected{% endif %}>{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Name *</label>
+                <input type="text" name="name" value="{{ subcategory.name|default:'' }}" placeholder="Subcategory name" required class="form-input">
+            </div>
+            <div>
+                <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Slug *</label>
+                <input type="text" name="slug" value="{{ subcategory.slug|default:'' }}" placeholder="subcategory-slug" required class="form-input">
+            </div>
+        </div>
+        <div>
+            <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Icon (emoji)</label>
+            <input type="text" name="icon" value="{{ subcategory.icon|default:'📦' }}" maxlength="10" placeholder="📦" class="form-input">
+        </div>
+        <button type="submit" class="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold transition">
+            {% if mode == 'create' %}Create Subcategory{% else %}Save Changes{% endif %}
+        </button>
+    </form>
+</div>
+{% endblock %}
