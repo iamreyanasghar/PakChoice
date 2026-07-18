@@ -4,7 +4,10 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from django.utils import timezone
+from django.core.paginator import Paginator
+from datetime import timedelta
 from .models import Category, SubCategory, BoycottProduct, PakistaniAlternative, UserProfile
+from .admin_forms import CategoryForm, SubCategoryForm, ProductForm, AlternativeModerationForm, UserEditForm, UserProfileEditForm
 
 
 def _admin_required(user):
@@ -44,58 +47,64 @@ def admin_overview(request):
 
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_category_list(request):
-    categories = Category.objects.annotate(
+    query = request.GET.get('q', '').strip()
+    categories_qs = Category.objects.annotate(
         sub_count=Count('subcategories')
     ).order_by('order', 'name')
-    return render(request, 'core/admin/category_list.html', {'categories': categories})
+
+    if query:
+        categories_qs = categories_qs.filter(
+            Q(name__icontains=query) | Q(slug__icontains=query)
+        )
+
+    paginator = Paginator(categories_qs, 20)
+    categories = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'core/admin/category_list.html', {
+        'categories': categories,
+        'search_query': query,
+    })
 
 
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_category_create(request):
     if request.method == 'POST':
-        name = request.POST.get('name', '').strip()
-        slug = request.POST.get('slug', '').strip()
-        icon = request.POST.get('icon', '📦').strip()
-        description = request.POST.get('description', '').strip()
-        order = request.POST.get('order', 0)
-
-        if not name or not slug:
-            messages.error(request, 'Name and slug are required.')
-        elif Category.objects.filter(slug=slug).exists():
-            messages.error(request, 'A category with this slug already exists.')
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            if Category.objects.filter(slug=form.cleaned_data['slug']).exists():
+                messages.error(request, 'A category with this slug already exists.')
+            else:
+                form.save()
+                messages.success(request, f'✅ Category "{form.cleaned_data["name"]}" created successfully.')
+                return redirect('admin_category_list')
         else:
-            Category.objects.create(name=name, slug=slug, icon=icon, description=description, order=order)
-            messages.success(request, f'✅ Category "{name}" created successfully.')
-            return redirect('admin_category_list')
+            for error in form.errors.values():
+                messages.error(request, error[0])
+    else:
+        form = CategoryForm()
 
-    return render(request, 'core/admin/category_form.html', {'mode': 'create'})
+    return render(request, 'core/admin/category_form.html', {'mode': 'create', 'form': form})
 
 
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_category_edit(request, pk):
     category = get_object_or_404(Category, pk=pk)
     if request.method == 'POST':
-        name = request.POST.get('name', '').strip()
-        slug = request.POST.get('slug', '').strip()
-        icon = request.POST.get('icon', '📦').strip()
-        description = request.POST.get('description', '').strip()
-        order = request.POST.get('order', 0)
-
-        if not name or not slug:
-            messages.error(request, 'Name and slug are required.')
-        elif Category.objects.filter(slug=slug).exclude(pk=pk).exists():
-            messages.error(request, 'A category with this slug already exists.')
+        form = CategoryForm(request.POST, instance=category)
+        if form.is_valid():
+            if Category.objects.filter(slug=form.cleaned_data['slug']).exclude(pk=pk).exists():
+                messages.error(request, 'A category with this slug already exists.')
+            else:
+                form.save()
+                messages.success(request, f'✅ Category "{form.cleaned_data["name"]}" updated successfully.')
+                return redirect('admin_category_list')
         else:
-            category.name = name
-            category.slug = slug
-            category.icon = icon
-            category.description = description
-            category.order = order
-            category.save()
-            messages.success(request, f'✅ Category "{name}" updated successfully.')
-            return redirect('admin_category_list')
+            for error in form.errors.values():
+                messages.error(request, error[0])
+    else:
+        form = CategoryForm(instance=category)
 
-    return render(request, 'core/admin/category_form.html', {'mode': 'edit', 'category': category})
+    return render(request, 'core/admin/category_form.html', {'mode': 'edit', 'form': form, 'category': category})
 
 
 @user_passes_test(_admin_required, login_url='/login/')
@@ -103,8 +112,10 @@ def admin_category_delete(request, pk):
     category = get_object_or_404(Category, pk=pk)
     if request.method == 'POST':
         name = category.name
-        category.delete()
-        messages.success(request, f'🗑️ Category "{name}" deleted successfully.')
+        category.is_active = False
+        category.deleted_at = timezone.now()
+        category.save()
+        messages.success(request, f'🗑️ Category "{name}" moved to trash.')
         return redirect('admin_category_list')
     return render(request, 'core/admin/delete_confirm.html', {
         'object': category,
@@ -117,64 +128,69 @@ def admin_category_delete(request, pk):
 
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_subcategory_list(request):
-    subcategories = SubCategory.objects.select_related('category').annotate(
+    query = request.GET.get('q', '').strip()
+    subcategories_qs = SubCategory.objects.select_related('category').annotate(
         product_count=Count('products')
     ).order_by('category__name', 'name')
-    return render(request, 'core/admin/subcategory_list.html', {'subcategories': subcategories})
+
+    if query:
+        subcategories_qs = subcategories_qs.filter(
+            Q(name__icontains=query) | Q(category__name__icontains=query)
+        )
+
+    paginator = Paginator(subcategories_qs, 20)
+    subcategories = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'core/admin/subcategory_list.html', {
+        'subcategories': subcategories,
+        'search_query': query,
+    })
 
 
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_subcategory_create(request):
-    categories = Category.objects.all()
+    categories = Category.objects.filter(is_active=True).all()
     if request.method == 'POST':
-        category_id = request.POST.get('category')
-        name = request.POST.get('name', '').strip()
-        slug = request.POST.get('slug', '').strip()
-        icon = request.POST.get('icon', '📦').strip()
-
-        category = get_object_or_404(Category, pk=category_id) if category_id else None
-
-        if not name or not slug or not category:
-            messages.error(request, 'All required fields must be filled.')
-        elif SubCategory.objects.filter(category=category, slug=slug).exists():
-            messages.error(request, 'A subcategory with this slug already exists in this category.')
+        form = SubCategoryForm(request.POST)
+        if form.is_valid():
+            if SubCategory.objects.filter(category=form.cleaned_data['category'], slug=form.cleaned_data['slug']).exists():
+                messages.error(request, 'A subcategory with this slug already exists in this category.')
+            else:
+                form.save()
+                messages.success(request, f'✅ Subcategory "{form.cleaned_data["name"]}" created successfully.')
+                return redirect('admin_subcategory_list')
         else:
-            SubCategory.objects.create(category=category, name=name, slug=slug, icon=icon)
-            messages.success(request, f'✅ Subcategory "{name}" created successfully.')
-            return redirect('admin_subcategory_list')
+            for error in form.errors.values():
+                messages.error(request, error[0])
+    else:
+        form = SubCategoryForm()
 
     return render(request, 'core/admin/subcategory_form.html', {
-        'mode': 'create', 'categories': categories
+        'mode': 'create', 'form': form, 'categories': categories
     })
 
 
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_subcategory_edit(request, pk):
     subcategory = get_object_or_404(SubCategory, pk=pk)
-    categories = Category.objects.all()
+    categories = Category.objects.filter(is_active=True).all()
     if request.method == 'POST':
-        category_id = request.POST.get('category')
-        name = request.POST.get('name', '').strip()
-        slug = request.POST.get('slug', '').strip()
-        icon = request.POST.get('icon', '📦').strip()
-
-        category = get_object_or_404(Category, pk=category_id) if category_id else None
-
-        if not name or not slug or not category:
-            messages.error(request, 'All required fields must be filled.')
-        elif SubCategory.objects.filter(category=category, slug=slug).exclude(pk=pk).exists():
-            messages.error(request, 'A subcategory with this slug already exists in this category.')
+        form = SubCategoryForm(request.POST, instance=subcategory)
+        if form.is_valid():
+            if SubCategory.objects.filter(category=form.cleaned_data['category'], slug=form.cleaned_data['slug']).exclude(pk=pk).exists():
+                messages.error(request, 'A subcategory with this slug already exists in this category.')
+            else:
+                form.save()
+                messages.success(request, f'✅ Subcategory "{form.cleaned_data["name"]}" updated successfully.')
+                return redirect('admin_subcategory_list')
         else:
-            subcategory.category = category
-            subcategory.name = name
-            subcategory.slug = slug
-            subcategory.icon = icon
-            subcategory.save()
-            messages.success(request, f'✅ Subcategory "{name}" updated successfully.')
-            return redirect('admin_subcategory_list')
+            for error in form.errors.values():
+                messages.error(request, error[0])
+    else:
+        form = SubCategoryForm(instance=subcategory)
 
     return render(request, 'core/admin/subcategory_form.html', {
-        'mode': 'edit', 'subcategory': subcategory, 'categories': categories
+        'mode': 'edit', 'form': form, 'subcategory': subcategory, 'categories': categories
     })
 
 
@@ -183,8 +199,10 @@ def admin_subcategory_delete(request, pk):
     subcategory = get_object_or_404(SubCategory, pk=pk)
     if request.method == 'POST':
         name = subcategory.name
-        subcategory.delete()
-        messages.success(request, f'🗑️ Subcategory "{name}" deleted successfully.')
+        subcategory.is_active = False
+        subcategory.deleted_at = timezone.now()
+        subcategory.save()
+        messages.success(request, f'🗑️ Subcategory "{name}" moved to trash.')
         return redirect('admin_subcategory_list')
     return render(request, 'core/admin/delete_confirm.html', {
         'object': subcategory,
@@ -197,83 +215,69 @@ def admin_subcategory_delete(request, pk):
 
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_product_list(request):
-    products = BoycottProduct.objects.select_related(
+    query = request.GET.get('q', '').strip()
+    products_qs = BoycottProduct.objects.select_related(
         'subcategory__category'
     ).annotate(alt_count=Count('alternatives')).order_by('name')
-    return render(request, 'core/admin/product_list.html', {'products': products})
+
+    if query:
+        products_qs = products_qs.filter(
+            Q(name__icontains=query) | Q(brand__icontains=query) | Q(slug__icontains=query)
+        )
+
+    paginator = Paginator(products_qs, 20)
+    products = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'core/admin/product_list.html', {
+        'products': products,
+        'search_query': query,
+    })
 
 
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_product_create(request):
-    subcategories = SubCategory.objects.select_related('category').all()
+    subcategories = SubCategory.objects.filter(is_active=True).select_related('category').all()
     if request.method == 'POST':
-        subcategory_id = request.POST.get('subcategory')
-        name = request.POST.get('name', '').strip()
-        slug = request.POST.get('slug', '').strip()
-        brand = request.POST.get('brand', '').strip()
-        country = request.POST.get('country_of_origin', '').strip()
-        reason = request.POST.get('reason', '').strip()
-        image_url = request.POST.get('image_url', '').strip()
-        logo_url = request.POST.get('logo_url', '').strip()
-        verified = request.POST.get('verified') == 'on'
-
-        subcategory = get_object_or_404(SubCategory, pk=subcategory_id) if subcategory_id else None
-
-        if not name or not slug or not brand or not subcategory:
-            messages.error(request, 'Required fields: Name, Slug, Brand, and Subcategory.')
-        elif BoycottProduct.objects.filter(slug=slug).exists():
-            messages.error(request, 'A product with this slug already exists.')
+        form = ProductForm(request.POST)
+        if form.is_valid():
+            if BoycottProduct.objects.filter(slug=form.cleaned_data['slug']).exists():
+                messages.error(request, 'A product with this slug already exists.')
+            else:
+                form.save()
+                messages.success(request, f'✅ Product "{form.cleaned_data["name"]}" created successfully.')
+                return redirect('admin_product_list')
         else:
-            BoycottProduct.objects.create(
-                subcategory=subcategory, name=name, slug=slug, brand=brand,
-                country_of_origin=country, reason=reason,
-                image_url=image_url, logo_url=logo_url, verified=verified,
-            )
-            messages.success(request, f'✅ Product "{name}" created successfully.')
-            return redirect('admin_product_list')
+            for error in form.errors.values():
+                messages.error(request, error[0])
+    else:
+        form = ProductForm()
 
     return render(request, 'core/admin/product_form.html', {
-        'mode': 'create', 'subcategories': subcategories
+        'mode': 'create', 'form': form, 'subcategories': subcategories
     })
 
 
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_product_edit(request, pk):
     product = get_object_or_404(BoycottProduct, pk=pk)
-    subcategories = SubCategory.objects.select_related('category').all()
+    subcategories = SubCategory.objects.filter(is_active=True).select_related('category').all()
     if request.method == 'POST':
-        subcategory_id = request.POST.get('subcategory')
-        name = request.POST.get('name', '').strip()
-        slug = request.POST.get('slug', '').strip()
-        brand = request.POST.get('brand', '').strip()
-        country = request.POST.get('country_of_origin', '').strip()
-        reason = request.POST.get('reason', '').strip()
-        image_url = request.POST.get('image_url', '').strip()
-        logo_url = request.POST.get('logo_url', '').strip()
-        verified = request.POST.get('verified') == 'on'
-
-        subcategory = get_object_or_404(SubCategory, pk=subcategory_id) if subcategory_id else None
-
-        if not name or not slug or not brand or not subcategory:
-            messages.error(request, 'Required fields: Name, Slug, Brand, and Subcategory.')
-        elif BoycottProduct.objects.filter(slug=slug).exclude(pk=pk).exists():
-            messages.error(request, 'A product with this slug already exists.')
+        form = ProductForm(request.POST, instance=product)
+        if form.is_valid():
+            if BoycottProduct.objects.filter(slug=form.cleaned_data['slug']).exclude(pk=pk).exists():
+                messages.error(request, 'A product with this slug already exists.')
+            else:
+                form.save()
+                messages.success(request, f'✅ Product "{form.cleaned_data["name"]}" updated successfully.')
+                return redirect('admin_product_list')
         else:
-            product.subcategory = subcategory
-            product.name = name
-            product.slug = slug
-            product.brand = brand
-            product.country_of_origin = country
-            product.reason = reason
-            product.image_url = image_url
-            product.logo_url = logo_url
-            product.verified = verified
-            product.save()
-            messages.success(request, f'✅ Product "{name}" updated successfully.')
-            return redirect('admin_product_list')
+            for error in form.errors.values():
+                messages.error(request, error[0])
+    else:
+        form = ProductForm(instance=product)
 
     return render(request, 'core/admin/product_form.html', {
-        'mode': 'edit', 'product': product, 'subcategories': subcategories
+        'mode': 'edit', 'form': form, 'product': product, 'subcategories': subcategories
     })
 
 
@@ -282,8 +286,10 @@ def admin_product_delete(request, pk):
     product = get_object_or_404(BoycottProduct, pk=pk)
     if request.method == 'POST':
         name = product.name
-        product.delete()
-        messages.success(request, f'🗑️ Product "{name}" deleted successfully.')
+        product.is_active = False
+        product.deleted_at = timezone.now()
+        product.save()
+        messages.success(request, f'🗑️ Product "{name}" moved to trash.')
         return redirect('admin_product_list')
     return render(request, 'core/admin/delete_confirm.html', {
         'object': product,
@@ -297,16 +303,26 @@ def admin_product_delete(request, pk):
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_alternative_list(request):
     alt_status = request.GET.get('status', '')
-    alternatives = PakistaniAlternative.objects.select_related(
+    query = request.GET.get('q', '').strip()
+    alternatives_qs = PakistaniAlternative.objects.select_related(
         'product', 'added_by', 'reviewed_by'
     ).order_by('-created_at')
 
     if alt_status:
-        alternatives = alternatives.filter(status=alt_status)
+        alternatives_qs = alternatives_qs.filter(status=alt_status)
+
+    if query:
+        alternatives_qs = alternatives_qs.filter(
+            Q(name__icontains=query) | Q(brand__icontains=query) | Q(product__name__icontains=query)
+        )
+
+    paginator = Paginator(alternatives_qs, 20)
+    alternatives = paginator.get_page(request.GET.get('page'))
 
     return render(request, 'core/admin/alternative_list.html', {
         'alternatives': alternatives,
         'current_status': alt_status,
+        'search_query': query,
     })
 
 
@@ -315,8 +331,10 @@ def admin_alternative_delete(request, pk):
     alt = get_object_or_404(PakistaniAlternative, pk=pk)
     if request.method == 'POST':
         name = alt.name
-        alt.delete()
-        messages.success(request, f'🗑️ Alternative "{name}" deleted successfully.')
+        alt.is_active = False
+        alt.deleted_at = timezone.now()
+        alt.save()
+        messages.success(request, f'🗑️ Alternative "{name}" moved to trash.')
         return redirect('admin_alternative_list')
     return render(request, 'core/admin/delete_confirm.html', {
         'object': alt,
@@ -329,10 +347,23 @@ def admin_alternative_delete(request, pk):
 
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_user_list(request):
-    users = User.objects.select_related('profile').annotate(
+    query = request.GET.get('q', '').strip()
+    users_qs = User.objects.select_related('profile').annotate(
         alt_count=Count('submitted_alternatives')
     ).order_by('-date_joined')
-    return render(request, 'core/admin/user_list.html', {'users': users})
+
+    if query:
+        users_qs = users_qs.filter(
+            Q(username__icontains=query) | Q(profile__display_name__icontains=query)
+        )
+
+    paginator = Paginator(users_qs, 20)
+    users = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'core/admin/user_list.html', {
+        'users': users,
+        'search_query': query,
+    })
 
 
 @user_passes_test(_admin_required, login_url='/login/')
@@ -340,39 +371,29 @@ def admin_user_edit(request, pk):
     user = get_object_or_404(User, pk=pk)
     profile, _ = UserProfile.objects.get_or_create(user=user)
     if request.method == 'POST':
-        username = request.POST.get('username', '').strip()
-        email = request.POST.get('email', '').strip()
-        first_name = request.POST.get('first_name', '').strip()
-        last_name = request.POST.get('last_name', '').strip()
-        display_name = request.POST.get('display_name', '').strip()
-        is_staff = request.POST.get('is_staff') == 'on'
-        is_superuser = request.POST.get('is_superuser') == 'on'
-        is_active = request.POST.get('is_active') == 'on'
-
-        if not username or not email:
-            messages.error(request, 'Username and email are required.')
-        elif User.objects.filter(username=username).exclude(pk=pk).exists():
-            messages.error(request, 'A user with this username already exists.')
-        elif User.objects.filter(email=email).exclude(pk=pk).exists():
-            messages.error(request, 'A user with this email already exists.')
+        user_form = UserEditForm(request.POST, instance=user)
+        profile_form = UserProfileEditForm(request.POST, instance=profile)
+        if user_form.is_valid() and profile_form.is_valid():
+            if User.objects.filter(username=user_form.cleaned_data['username']).exclude(pk=pk).exists():
+                messages.error(request, 'A user with this username already exists.')
+            else:
+                user_form.save()
+                profile_form.save()
+                messages.success(request, f'✅ User "{user_form.cleaned_data["username"]}" updated successfully.')
+                return redirect('admin_user_list')
         else:
-            user.username = username
-            user.email = email
-            user.first_name = first_name
-            user.last_name = last_name
-            user.is_staff = is_staff
-            user.is_superuser = is_superuser
-            user.is_active = is_active
-            user.save()
-            profile.display_name = display_name
-            profile.save()
-            messages.success(request, f'✅ User "{username}" updated successfully.')
-            return redirect('admin_user_list')
+            for error in list(user_form.errors.values()) + list(profile_form.errors.values()):
+                messages.error(request, error[0])
+    else:
+        user_form = UserEditForm(instance=user)
+        profile_form = UserProfileEditForm(instance=profile)
 
     return render(request, 'core/admin/user_form.html', {
         'user': user,
         'profile': profile,
         'mode': 'edit',
+        'user_form': user_form,
+        'profile_form': profile_form,
     })
 
 
@@ -398,12 +419,200 @@ def admin_user_delete(request, pk):
             messages.error(request, 'You cannot delete your own account.')
         else:
             name = user.username
-            user.delete()
-            messages.success(request, f'🗑️ User "{name}" deleted successfully.')
+            user.is_active = False
+            user.save()
+            messages.success(request, f'🗑️ User "{name}" moved to trash.')
         return redirect('admin_user_list')
     return render(request, 'core/admin/delete_confirm.html', {
         'object': user,
         'type_name': 'User',
         'cancel_url': 'admin_user_list',
     })
+
+
+# ── Trash ────────────────────────────────────────────────────
+
+@user_passes_test(_admin_required, login_url='/login/')
+def admin_trash(request):
+    """Trash overview showing counts of deleted items."""
+    trash_stats = {
+        'categories': Category.objects.filter(is_active=False).count(),
+        'subcategories': SubCategory.objects.filter(is_active=False).count(),
+        'products': BoycottProduct.objects.filter(is_active=False).count(),
+        'alternatives': PakistaniAlternative.objects.filter(is_active=False).count(),
+        'users': User.objects.filter(is_active=False).count(),
+    }
+    total_trash = sum(trash_stats.values())
+
+    # Items older than 10 days that can be purged
+    purge_cutoff = timezone.now() - timedelta(days=10)
+    purgeable = {
+        'categories': Category.objects.filter(is_active=False, deleted_at__lt=purge_cutoff).count(),
+        'subcategories': SubCategory.objects.filter(is_active=False, deleted_at__lt=purge_cutoff).count(),
+        'products': BoycottProduct.objects.filter(is_active=False, deleted_at__lt=purge_cutoff).count(),
+        'alternatives': PakistaniAlternative.objects.filter(is_active=False, deleted_at__lt=purge_cutoff).count(),
+        'users': User.objects.filter(is_active=False).count(),
+    }
+
+    return render(request, 'core/admin/trash.html', {
+        'trash_stats': trash_stats,
+        'purgeable': purgeable,
+        'total_trash': total_trash,
+    })
+
+
+@user_passes_test(_admin_required, login_url='/login/')
+def admin_trash_list(request, model_type):
+    """Generic trash list view for any model type."""
+    model_map = {
+        'categories': (Category, 'category'),
+        'subcategories': (SubCategory, 'subcategory'),
+        'products': (BoycottProduct, 'product'),
+        'alternatives': (PakistaniAlternative, 'alternative'),
+        'users': (User, 'user'),
+    }
+
+    if model_type not in model_map:
+        messages.error(request, 'Invalid trash type.')
+        return redirect('admin_trash')
+
+    model, name = model_map[model_type]
+    query = request.GET.get('q', '').strip()
+
+    if model_type == 'users':
+        items_qs = model.objects.filter(is_active=False)
+        if query:
+            items_qs = items_qs.filter(
+                Q(username__icontains=query) | Q(profile__display_name__icontains=query)
+            )
+    elif model_type == 'alternatives':
+        items_qs = model.objects.filter(is_active=False).select_related('product', 'added_by')
+        if query:
+            items_qs = items_qs.filter(
+                Q(name__icontains=query) | Q(brand__icontains=query) | Q(product__name__icontains=query)
+            )
+    elif model_type == 'products':
+        items_qs = model.objects.filter(is_active=False).select_related('subcategory__category')
+        if query:
+            items_qs = items_qs.filter(
+                Q(name__icontains=query) | Q(brand__icontains=query) | Q(slug__icontains=query)
+            )
+    elif model_type == 'subcategories':
+        items_qs = model.objects.filter(is_active=False).select_related('category')
+        if query:
+            items_qs = items_qs.filter(
+                Q(name__icontains=query) | Q(category__name__icontains=query)
+            )
+    else:
+        items_qs = model.objects.filter(is_active=False)
+        if query:
+            items_qs = items_qs.filter(
+                Q(name__icontains=query) | Q(slug__icontains=query)
+            )
+
+    if model_type == 'users':
+        items_qs = items_qs.order_by('-date_joined')
+    else:
+        items_qs = items_qs.order_by('-deleted_at')
+    paginator = Paginator(items_qs, 20)
+    items = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'core/admin/trash_list.html', {
+        'items': items,
+        'model_type': model_type,
+        'model_name': name,
+        'search_query': query,
+    })
+
+
+@user_passes_test(_admin_required, login_url='/login/')
+def admin_trash_restore(request, model_type, pk):
+    """Restore an item from trash."""
+    model_map = {
+        'categories': Category,
+        'subcategories': SubCategory,
+        'products': BoycottProduct,
+        'alternatives': PakistaniAlternative,
+        'users': User,
+    }
+
+    if model_type not in model_map:
+        messages.error(request, 'Invalid trash type.')
+        return redirect('admin_trash')
+
+    model = model_map[model_type]
+    item = get_object_or_404(model, pk=pk, is_active=False)
+
+    if request.method == 'POST':
+        item.is_active = True
+        if hasattr(item, 'deleted_at'):
+            item.deleted_at = None
+        item.save()
+        messages.success(request, f'✅ {item.name if hasattr(item, "name") else item.username} restored successfully.')
+        return redirect('admin_trash_list', model_type=model_type)
+
+    return render(request, 'core/admin/trash_restore_confirm.html', {
+        'item': item,
+        'model_type': model_type,
+    })
+
+
+@user_passes_test(_admin_required, login_url='/login/')
+def admin_trash_purge(request, model_type, pk):
+    """Permanently delete an item from trash."""
+    model_map = {
+        'categories': Category,
+        'subcategories': SubCategory,
+        'products': BoycottProduct,
+        'alternatives': PakistaniAlternative,
+        'users': User,
+    }
+
+    if model_type not in model_map:
+        messages.error(request, 'Invalid trash type.')
+        return redirect('admin_trash')
+
+    model = model_map[model_type]
+    item = get_object_or_404(model, pk=pk, is_active=False)
+
+    if request.method == 'POST':
+        name = item.name if hasattr(item, 'name') else item.username
+        item.delete()
+        messages.success(request, f'🗑️ {name} permanently deleted.')
+        return redirect('admin_trash_list', model_type=model_type)
+
+    return render(request, 'core/admin/trash_purge_confirm.html', {
+        'item': item,
+        'model_type': model_type,
+    })
+
+
+@user_passes_test(_admin_required, login_url='/login/')
+def admin_trash_purge_all(request, model_type):
+    """Permanently delete all purgeable items (older than 10 days) for a model type."""
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method.')
+        return redirect('admin_trash')
+
+    model_map = {
+        'categories': Category,
+        'subcategories': SubCategory,
+        'products': BoycottProduct,
+        'alternatives': PakistaniAlternative,
+        'users': User,
+    }
+
+    if model_type not in model_map:
+        messages.error(request, 'Invalid trash type.')
+        return redirect('admin_trash')
+
+    model = model_map[model_type]
+    purge_cutoff = timezone.now() - timedelta(days=10)
+    if model_type == 'users':
+        deleted, _ = model.objects.filter(is_active=False).delete()
+    else:
+        deleted, _ = model.objects.filter(is_active=False, deleted_at__lt=purge_cutoff).delete()
+
+    messages.success(request, f'🗑️ Purged {deleted} items older than 10 days.')
+    return redirect('admin_trash')
 

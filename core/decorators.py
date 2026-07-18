@@ -11,7 +11,7 @@ import functools
 def rate_limit(key_prefix, limit=10, period=60):
     """
     Rate limiting decorator.
-    Limits requests per IP address.
+    Limits requests per IP address or authenticated user.
     
     Args:
         key_prefix: Prefix for the cache key
@@ -27,13 +27,9 @@ def rate_limit(key_prefix, limit=10, period=60):
                 ip_address = f"user_{request.user.id}"
             
             cache_key = f"rate_limit_{key_prefix}_{ip_address}"
-            requests = cache.get(cache_key, [])
+            request_count = cache.get(cache_key, 0)
             
-            # Clean old requests
-            now = timezone.now()
-            requests = [req for req in requests if now - req < timedelta(seconds=period)]
-            
-            if len(requests) >= limit:
+            if request_count >= limit:
                 if request.content_type == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse(
                         {'error': 'Too many requests. Please try again later.'},
@@ -44,8 +40,8 @@ def rate_limit(key_prefix, limit=10, period=60):
                 messages.error(request, 'Too many requests. Please try again later.')
                 return redirect('home')
             
-            requests.append(now)
-            cache.set(cache_key, requests, period)
+            # Increment counter and set expiry
+            cache.set(cache_key, request_count + 1, period)
             
             return view_func(request, *args, **kwargs)
         return wrapped_view

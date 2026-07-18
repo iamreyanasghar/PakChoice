@@ -1,5 +1,7 @@
+import os
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.http import JsonResponse
@@ -10,7 +12,7 @@ from django.views.decorators.http import require_POST
 from .decorators import rate_limit
 from .security_logger import log_security_event
 from .models import Category, SubCategory, BoycottProduct, PakistaniAlternative, AlternativeVote, UserProfile
-from .forms import RegisterForm, LoginForm, AlternativeForm, AvatarForm, ProfileSettingsForm, PasswordChangeForm, ModerationForm
+from .forms import RegisterForm, LoginForm, AlternativeForm, AvatarForm, ProfileSettingsForm, PasswordChangeForm, ModerationForm, ForgotPasswordForm, VerifySecurityForm, ResetPasswordForm, SecuritySettingsForm
 
 
 def _staff_required(user):
@@ -18,34 +20,34 @@ def _staff_required(user):
 
 
 def home(request):
-    categories = Category.objects.prefetch_related('subcategories').all()
-    total_products = BoycottProduct.objects.filter(verified=True).count()
-    total_alternatives = PakistaniAlternative.objects.filter(status='approved').count()
+    categories = Category.objects.filter(is_active=True).prefetch_related('subcategories').all()
+    total_products = BoycottProduct.objects.filter(verified=True, is_active=True).count()
+    total_alternatives = PakistaniAlternative.objects.filter(status='approved', is_active=True).count()
     return render(request, 'core/home.html', {
         'categories': categories,
-        'total_products': int(round(total_products / 10.0)) * 10,
-        'total_alternatives': int(round(total_alternatives / 10.0)) * 10,
+        'total_products': total_products,
+        'total_alternatives': total_alternatives,
     })
 
 
 def category_detail(request, slug):
-    category = get_object_or_404(Category, slug=slug)
-    subcategories = category.subcategories.prefetch_related('products').all()
+    category = get_object_or_404(Category, slug=slug, is_active=True)
+    subcategories = category.subcategories.filter(is_active=True).prefetch_related('products').all()
     return render(request, 'core/category.html', {'category': category, 'subcategories': subcategories})
 
 
 def subcategory_detail(request, cat_slug, sub_slug):
-    category = get_object_or_404(Category, slug=cat_slug)
-    subcategory = get_object_or_404(SubCategory, category=category, slug=sub_slug)
-    products = subcategory.products.filter(verified=True).prefetch_related('alternatives')
+    category = get_object_or_404(Category, slug=cat_slug, is_active=True)
+    subcategory = get_object_or_404(SubCategory, category=category, slug=sub_slug, is_active=True)
+    products = subcategory.products.filter(verified=True, is_active=True).prefetch_related('alternatives')
     return render(request, 'core/subcategory.html', {
         'category': category, 'subcategory': subcategory, 'products': products
     })
 
 
 def product_detail(request, slug):
-    product = get_object_or_404(BoycottProduct, slug=slug)
-    alternatives = product.alternatives.filter(status='approved')
+    product = get_object_or_404(BoycottProduct, slug=slug, is_active=True)
+    alternatives = product.alternatives.filter(status='approved', is_active=True)
     user_votes = set()
     if request.user.is_authenticated:
         user_votes = set(AlternativeVote.objects.filter(
@@ -76,6 +78,7 @@ def add_alternative(request, slug):
 
 
 @require_POST
+@login_required
 @rate_limit(key_prefix='upvote', limit=30, period=60)
 def upvote_alternative(request, pk):
     alt = get_object_or_404(PakistaniAlternative, pk=pk, status='approved')
@@ -90,26 +93,58 @@ def upvote_alternative(request, pk):
     return JsonResponse({'upvotes': max(0, alt.upvotes), 'voted': False})
 
 
+from django.core.paginator import Paginator
+
+
 def search(request):
     q = request.GET.get('q', '').strip()
     products, categories, subcategories = [], [], []
+    product_page = request.GET.get('product_page', 1)
+    category_page = request.GET.get('category_page', 1)
+    subcategory_page = request.GET.get('subcategory_page', 1)
+
     if q:
-        products = list(BoycottProduct.objects.filter(
-            Q(name__icontains=q) | Q(brand__icontains=q) | Q(reason__icontains=q)
-        ).select_related('subcategory__category')[:20])
-        categories = list(Category.objects.filter(
-            Q(name__icontains=q) | Q(description__icontains=q)
-        )[:10])
-        subcategories = list(SubCategory.objects.filter(
-            Q(name__icontains=q) | Q(category__name__icontains=q)
-        ).select_related('category')[:10])
+        products_qs = BoycottProduct.objects.filter(
+            Q(name__icontains=q) | Q(brand__icontains=q) | Q(reason__icontains=q),
+            is_active=True
+        ).select_related('subcategory__category')
+        products_paginator = Paginator(products_qs, 10)
+        products = products_paginator.get_page(product_page)
+
+        categories_qs = Category.objects.filter(
+            Q(name__icontains=q) | Q(description__icontains=q),
+            is_active=True
+        )
+        categories_paginator = Paginator(categories_qs, 10)
+        categories = categories_paginator.get_page(category_page)
+
+        subcategories_qs = SubCategory.objects.filter(
+            Q(name__icontains=q) | Q(category__name__icontains=q),
+            is_active=True
+        ).select_related('category')
+        subcategories_paginator = Paginator(subcategories_qs, 10)
+        subcategories = subcategories_paginator.get_page(subcategory_page)
+
+    # Dynamic suggestions from popular categories and products
+    suggestions = list(Category.objects.filter(is_active=True).order_by('order')[:6].values_list('name', flat=True))
+    popular_products = list(BoycottProduct.objects.filter(verified=True, is_active=True).order_by('name')[:4].values_list('name', flat=True))
+    suggestions.extend(popular_products)
+
+    total = 0
+    if products:
+        total += products.paginator.count
+    if categories:
+        total += categories.paginator.count
+    if subcategories:
+        total += subcategories.paginator.count
+
     return render(request, 'core/search.html', {
         'products': products,
         'categories': categories,
         'subcategories': subcategories,
         'query': q,
-        'total': len(products) + len(categories) + len(subcategories),
-        'suggestions': ['Food', 'Beverages', 'Clothing', 'Electronics', 'Coca-Cola', 'Nike', 'Nestlé', 'Pampers', 'Starbucks', 'Zara'],
+        'total': total,
+        'suggestions': suggestions[:10],
     })
 
 
@@ -120,11 +155,14 @@ def register_view(request):
     if form.is_valid():
         user = form.save()
 
-        # Save display_name to profile (signal already created the profile)
+        # Save profile data (signal already created the profile)
+        profile = user.profile
+        profile.security_question = form.cleaned_data.get('security_question', '')
+        profile.set_security_answer(form.cleaned_data.get('security_answer', ''))
         display_name = form.cleaned_data.get('display_name', '').strip()
         if display_name:
-            user.profile.display_name = display_name
-            user.profile.save()
+            profile.display_name = display_name
+        profile.save()
 
         # Log the user in and redirect to dashboard
         login(request, user)
@@ -163,6 +201,7 @@ def logout_view(request):
     return redirect('home')
 
 
+@login_required
 def dashboard(request):
     alternatives = PakistaniAlternative.objects.filter(
         added_by=request.user
@@ -176,6 +215,7 @@ def dashboard(request):
     })
 
 
+@login_required
 def profile_view(request):
     """Display user profile information (read-only)."""
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
@@ -223,6 +263,86 @@ def moderate_alternative(request, pk):
     return render(request, 'core/moderate.html', {'alt': alt, 'form': form})
 
 
+@rate_limit(key_prefix='forgot_password', limit=5, period=300)
+def forgot_password_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    form = ForgotPasswordForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        username = form.cleaned_data['username']
+        try:
+            user = User.objects.get(username=username)
+            if not user.profile.security_question:
+                messages.error(request, 'No security question set for this account. Please contact support.')
+                return redirect('forgot_password')
+            request.session['reset_username'] = username
+            return redirect('verify_security')
+        except User.DoesNotExist:
+            messages.error(request, 'No account found with that username.')
+    
+    return render(request, 'core/forgot_password.html', {'form': form})
+
+
+def verify_security_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    username = request.session.get('reset_username')
+    if not username:
+        messages.error(request, 'Please start the password reset process first.')
+        return redirect('forgot_password')
+    
+    try:
+        user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        messages.error(request, 'Invalid session. Please try again.')
+        return redirect('forgot_password')
+    
+    form = VerifySecurityForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        if user.profile.check_security_answer(form.cleaned_data['security_answer']):
+            request.session['security_verified'] = True
+            return redirect('reset_password')
+        else:
+            messages.error(request, 'Incorrect security answer. Please try again.')
+    
+    question_display = dict(UserProfile.SECURITY_QUESTIONS).get(user.profile.security_question, 'Security Question')
+    return render(request, 'core/verify_security.html', {
+        'form': form,
+        'question': question_display,
+    })
+
+
+def reset_password_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if not request.session.get('security_verified'):
+        messages.error(request, 'Please verify your security question first.')
+        return redirect('forgot_password')
+    
+    form = ResetPasswordForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        username = request.session.get('reset_username')
+        try:
+            user = User.objects.get(username=username)
+            user.set_password(form.cleaned_data['new_password1'])
+            user.save()
+            # Clear session
+            request.session.pop('reset_username', None)
+            request.session.pop('security_verified', None)
+            log_security_event('password_reset', f'Password reset successful for user {user.username}', user=user, request=request)
+            messages.success(request, '✅ Password reset successful! You can now log in with your new password.')
+            return redirect('login')
+        except User.DoesNotExist:
+            messages.error(request, 'Invalid session. Please try again.')
+            return redirect('forgot_password')
+    
+    return render(request, 'core/reset_password.html', {'form': form})
+
+
+@login_required
 def settings_view(request):
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
@@ -243,13 +363,24 @@ def settings_view(request):
         elif action == 'avatar':
             if request.POST.get('remove_avatar'):
                 if profile.avatar:
-                    profile.avatar.delete()
+                    # Delete the old file from filesystem
+                    old_file = profile.avatar.path if hasattr(profile.avatar, 'path') else None
+                    profile.avatar.delete(save=False)
                     profile.avatar = None
                     profile.save()
+                    # Also remove the file from filesystem if it still exists
+                    if old_file and os.path.exists(old_file):
+                        os.remove(old_file)
                     messages.success(request, '✅ Avatar removed successfully.')
                 return redirect('settings')
             avatar_form = AvatarForm(request.POST, request.FILES, instance=profile)
             if avatar_form.is_valid():
+                # Delete old avatar file if replacing
+                if profile.avatar:
+                    old_file = profile.avatar.path if hasattr(profile.avatar, 'path') else None
+                    profile.avatar.delete(save=False)
+                    if old_file and os.path.exists(old_file):
+                        os.remove(old_file)
                 avatar_form.save()
                 messages.success(request, '✅ Avatar updated successfully.')
                 return redirect('settings')
@@ -262,10 +393,19 @@ def settings_view(request):
                 messages.success(request, '✅ Password changed successfully.')
                 return redirect('settings')
 
+        elif action == 'security':
+            security_form = SecuritySettingsForm(request.POST, instance=profile)
+            if security_form.is_valid():
+                security_form.save()
+                messages.success(request, '✅ Security settings updated successfully.')
+                return redirect('settings')
+
+    security_form = SecuritySettingsForm(instance=profile)
     return render(request, 'core/settings.html', {
         'profile_form': profile_form,
         'avatar_form': avatar_form,
         'password_form': password_form,
+        'security_form': security_form,
         'profile': profile,
     })
 

@@ -31,9 +31,11 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
     """
     def process_response(self, request, response):
         # Content Security Policy
+        # Note: 'unsafe-inline' is kept for Tailwind CDN styles.
+        # Remove when Tailwind is built into the static pipeline.
         csp_directives = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net",
+            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net",
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com",
             "img-src 'self' data: https: http:",

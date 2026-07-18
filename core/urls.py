@@ -24,6 +24,13 @@ urlpatterns = [
     path('admin-panel/users/<int:pk>/toggle-staff/', admin_views.admin_user_toggle_staff, name='admin_user_toggle_staff'),
     path('admin-panel/users/<int:pk>/delete/', admin_views.admin_user_delete, name='admin_user_delete'),
 
+    # Trash
+    path('admin-panel/trash/', admin_views.admin_trash, name='admin_trash'),
+    path('admin-panel/trash/<str:model_type>/', admin_views.admin_trash_list, name='admin_trash_list'),
+    path('admin-panel/trash/<str:model_type>/<int:pk>/restore/', admin_views.admin_trash_restore, name='admin_trash_restore'),
+    path('admin-panel/trash/<str:model_type>/<int:pk>/purge/', admin_views.admin_trash_purge, name='admin_trash_purge'),
+    path('admin-panel/trash/<str:model_type>/purge-all/', admin_views.admin_trash_purge_all, name='admin_trash_purge_all'),
+
     # Public
     path('', views.home, name='home'),
     path('search/', views.search, name='search'),
@@ -37,6 +44,11 @@ urlpatterns = [
     path('account/dashboard/', views.dashboard, name='dashboard'),
     path('account/settings/', views.settings_view, name='settings'),
     path('account/delete/', views.delete_account, name='delete_account'),
+
+    # Password Reset
+    path('forgot-password/', views.forgot_password_view, name='forgot_password'),
+    path('verify-security/', views.verify_security_view, name='verify_security'),
+    path('reset-password/', views.reset_password_view, name='reset_password'),
 
     # Moderation
     path('admin-panel/moderation/', views.admin_dashboard, name='admin_dashboard'),

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils import timezone
-from .models import Category, SubCategory, BoycottProduct, PakistaniAlternative, UserProfile
+from .models import Category, SubCategory, BoycottProduct, PakistaniAlternative, UserProfile, AlternativeVote
 
 
 @admin.register(UserProfile)
@@ -85,3 +85,21 @@ class AlternativeAdmin(admin.ModelAdmin):
             obj.reviewed_by = request.user
             obj.reviewed_at = timezone.now()
         super().save_model(request, obj, form, change)
+
+
+@admin.register(AlternativeVote)
+class AlternativeVoteAdmin(admin.ModelAdmin):
+    list_display = ('user', 'alternative', 'alternative_product', 'alternative_brand')
+    list_filter = ('alternative__product__subcategory__category',)
+    search_fields = ('user__username', 'alternative__name', 'alternative__brand')
+    readonly_fields = ('user', 'alternative')
+
+    def alternative_product(self, obj):
+        return obj.alternative.product.name
+    alternative_product.short_description = 'Product'
+    alternative_product.admin_order_field = 'alternative__product__name'
+
+    def alternative_brand(self, obj):
+        return obj.alternative.brand
+    alternative_brand.short_description = 'Alternative Brand'
+    alternative_brand.admin_order_field = 'alternative__brand'
