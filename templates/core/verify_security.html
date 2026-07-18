@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}
+{% block title %}Verify Security — PakChoice{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <span class="text-5xl block mb-4">🛡️</span>
+            <h1 class="text-3xl font-black gradient-text">Security Verification</h1>
+            <p class="mt-2 text-sm" style="color:var(--text-muted)">
+                Answer your security question to reset your password
+            </p>
+        </div>
+
+        <div class="glass rounded-3xl p-8">
+            <div class="rounded-xl px-4 py-3 mb-6" style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border)">
+                <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:var(--tag-green-text)">Your Security Question:</p>
+                <p class="text-sm font-medium" style="color:var(--tag-green-text)">{{ question }}</p>
+            </div>
+
+            <form method="post" class="space-y-5">
+                {% csrf_token %}
+                {% for field in form %}
+                <div>
+                    <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <p class="tag-red text-xs mt-2 px-3 py-2 rounded-lg">{{ field.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                <button type="submit" class="w-full py-4 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-lg transition shadow-lg shadow-green-900/20 mt-2">
+                    Verify →
+                </button>
+            </form>
+            <div class="mt-6 text-center text-sm" style="color:var(--text-muted)">
+                <a href="{% url 'forgot_password' %}" class="font-medium hover:opacity-80 transition" style="color:#22c55e">← Back</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

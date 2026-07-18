@@ -1,0 +1,28 @@
+{% extends 'core/base.html' %}
+{% block title %}Restore — Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+        {% include 'core/admin/_nav.html' with active='trash' %}
+        <div class="flex-1 min-w-0">
+            <div class="glass rounded-2xl p-8 max-w-lg">
+                <h1 class="text-xl font-black mb-2">♻️ Restore Item</h1>
+                <p class="text-sm mb-6" style="color:var(--text-muted)">Are you sure you want to restore this item from trash? It will become visible again.</p>
+
+                <div class="rounded-xl p-4 mb-6" style="background:var(--border)">
+                    <p class="font-medium">{{ item.name|default:item.username }}</p>
+                    <p class="text-xs mt-1" style="color:var(--text-muted)">Type: {{ model_type|title }}</p>
+                    <p class="text-xs" style="color:var(--text-muted)">Deleted: {{ item.deleted_at|date:"M d, Y H:i" }}</p>
+                </div>
+
+                <form method="post" class="flex items-center gap-3">
+                    {% csrf_token %}
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition">Yes, Restore</button>
+                    <a href="{% url 'admin_trash_list' model_type %}" class="px-5 py-2.5 rounded-xl glass text-sm font-medium transition" style="color:var(--text-secondary)">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

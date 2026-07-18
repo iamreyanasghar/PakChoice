@@ -1,6 +1,6 @@
 {% comment %}
 Admin sidebar navigation. Usage: {% include 'core/admin/_nav.html' with active='categories' %}
-Possible active values: overview, moderation, categories, subcategories, products, alternatives, users, verifications
+Possible active values: overview, moderation, categories, subcategories, products, alternatives, users, trash
 {% endcomment %}
 <div class="lg:w-56 flex-shrink-0">
     <div class="glass rounded-2xl p-4 admin-sidebar space-y-1 sticky top-24">
@@ -8,11 +8,6 @@ Possible active values: overview, moderation, categories, subcategories, product
             {% if active == 'overview' %}" style="background:var(--tag-green-bg); color:var(--tag-green-text); border:1px solid var(--tag-green-border)"
             {% else %}" style="color:var(--text-secondary)"{% endif %}>
             📊 Overview
-        </a>
-        <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition
-            {% if active == 'moderation' %}" style="background:var(--tag-green-bg); color:var(--tag-green-text); border:1px solid var(--tag-green-border)"
-            {% else %}" style="color:var(--text-secondary)"{% endif %}>
-            ✅ Moderation
         </a>
         <a href="{% url 'admin_category_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition
             {% if active == 'categories' %}" style="background:var(--tag-green-bg); color:var(--tag-green-text); border:1px solid var(--tag-green-border)"
@@ -39,6 +34,11 @@ Possible active values: overview, moderation, categories, subcategories, product
             {% if active == 'users' %}" style="background:var(--tag-green-bg); color:var(--tag-green-text); border:1px solid var(--tag-green-border)"
             {% else %}" style="color:var(--text-secondary)"{% endif %}>
             👥 Users
+        </a>
+        <a href="{% url 'admin_trash' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition
+            {% if active == 'trash' %}" style="background:var(--tag-red-bg); color:var(--tag-red-text); border:1px solid var(--tag-red-border)"
+            {% else %}" style="color:var(--text-secondary)"{% endif %}>
+            🗑️ Trash
         </a>
     </div>
 </div>

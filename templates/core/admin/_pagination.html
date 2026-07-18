@@ -1,0 +1,24 @@
+{% if items.has_other_pages %}
+<div class="flex items-center justify-between px-5 py-3" style="border-top:1px solid var(--border)">
+    <div class="text-xs" style="color:var(--text-muted)">
+        Showing {{ items.start_index }} to {{ items.end_index }} of {{ items.paginator.count }} entries
+    </div>
+    <div class="flex items-center gap-1">
+        {% if items.has_previous %}
+            <a href="?page={{ items.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" class="px-3 py-1.5 rounded-lg glass text-xs font-medium transition hover:bg-white/10">&laquo; Prev</a>
+        {% endif %}
+
+        {% for num in items.paginator.page_range %}
+            {% if items.number == num %}
+                <span class="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600 text-white">{{ num }}</span>
+            {% elif num > items.number|add:'-3' and num < items.number|add:'3' %}
+                <a href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" class="px-3 py-1.5 rounded-lg glass text-xs font-medium transition hover:bg-white/10">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if items.has_next %}
+            <a href="?page={{ items.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" class="px-3 py-1.5 rounded-lg glass text-xs font-medium transition hover:bg-white/10">Next &raquo;</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

@@ -37,10 +37,13 @@
             <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold transition" style="color:#f87171; border:1px solid rgba(239,68,68,0.3)">Remove Photo</button>
         </form>
         {% endif %}
-        <form method="post" enctype="multipart/form-data" class="flex items-center gap-3 flex-wrap mt-3">
+        <form method="post" enctype="multipart/form-data" class="mt-3 space-y-4">
             {% csrf_token %}
             <input type="hidden" name="action" value="avatar">
             {{ avatar_form.avatar }}
+            {% if avatar_form.avatar.errors %}
+            <span class="tag-red text-xs px-3 py-2 rounded-lg inline-block">{{ avatar_form.avatar.errors.0 }}</span>
+            {% endif %}
             <button type="submit" class="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition">
                 Upload Photo
             </button>
@@ -101,6 +104,33 @@
             </div>
             <button type="submit" class="px-6 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition">
                 Update Password
+            </button>
+        </form>
+    </div>
+
+    <!-- Security Settings -->
+    <div class="glass rounded-3xl p-7 mb-6">
+        <h2 class="text-lg font-bold mb-5">Security Settings</h2>
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="security">
+            <div>
+                <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">Security Question</label>
+                {{ security_form.security_question }}
+                {% if security_form.security_question.errors %}
+                <p class="tag-red text-xs mt-2 px-3 py-1.5 rounded-lg">{{ security_form.security_question.errors.0 }}</p>
+                {% endif %}
+            </div>
+            <div>
+                <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">Security Answer</label>
+                {{ security_form.security_answer }}
+                {% if security_form.security_answer.errors %}
+                <p class="tag-red text-xs mt-2 px-3 py-1.5 rounded-lg">{{ security_form.security_answer.errors.0 }}</p>
+                {% endif %}
+                <p class="text-xs mt-1" style="color:var(--text-muted)">This will be used to verify your identity if you forget your password.</p>
+            </div>
+            <button type="submit" class="px-6 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition">
+                Save Security Settings
             </button>
         </form>
     </div>

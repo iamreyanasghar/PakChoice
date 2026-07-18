@@ -65,8 +65,11 @@ htmlcov/
 .hypothesis/
 
 # Django migrations
-*/migrations/
+# */migrations/  # REMOVED: migrations should be committed to version control
 !*/migrations/__init__.py
+
+# Data files (fixtures, seed data)
+data.json
 
 # Docker
 docker-compose.override.yml

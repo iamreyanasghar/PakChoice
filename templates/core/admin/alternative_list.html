@@ -6,14 +6,29 @@
     <div class="flex flex-col lg:flex-row gap-8">
         {% include 'core/admin/_nav.html' with active='alternatives' %}
         <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between mb-6">
+            <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
                 <h1 class="text-2xl font-black">🇵🇰 All Alternatives</h1>
-                <div class="flex gap-2">
-                    <a href="{% url 'admin_alternative_list' %}" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if not current_status %}bg-green-600 text-white{% else %}glass{% endif %}">All</a>
-                    <a href="{% url 'admin_alternative_list' %}?status=pending" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if current_status == 'pending' %}bg-green-600 text-white{% else %}glass{% endif %}">Pending</a>
-                    <a href="{% url 'admin_alternative_list' %}?status=approved" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if current_status == 'approved' %}bg-green-600 text-white{% else %}glass{% endif %}">Approved</a>
-                    <a href="{% url 'admin_alternative_list' %}?status=rejected" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if current_status == 'rejected' %}bg-green-600 text-white{% else %}glass{% endif %}">Rejected</a>
-                    <a href="{% url 'admin_alternative_list' %}?status=needs_changes" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if current_status == 'needs_changes' %}bg-green-600 text-white{% else %}glass{% endif %}">Changes</a>
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+                    <form method="get" class="w-full sm:w-auto">
+                        <div class="relative">
+                            <input type="text" name="q" value="{{ search_query|default:'' }}"
+                                placeholder="Search alternatives..."
+                                class="form-input pl-9 pr-4 py-2 text-sm w-full sm:w-64">
+                            <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                        {% if current_status %}
+                        <input type="hidden" name="status" value="{{ current_status }}">
+                        {% endif %}
+                    </form>
+                    <div class="flex gap-2 flex-wrap">
+                        <a href="{% url 'admin_alternative_list' %}" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if not current_status %}bg-green-600 text-white{% else %}glass{% endif %}">All</a>
+                        <a href="{% url 'admin_alternative_list' %}?status=pending" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if current_status == 'pending' %}bg-green-600 text-white{% else %}glass{% endif %}">Pending</a>
+                        <a href="{% url 'admin_alternative_list' %}?status=approved" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if current_status == 'approved' %}bg-green-600 text-white{% else %}glass{% endif %}">Approved</a>
+                        <a href="{% url 'admin_alternative_list' %}?status=rejected" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if current_status == 'rejected' %}bg-green-600 text-white{% else %}glass{% endif %}">Rejected</a>
+                        <a href="{% url 'admin_alternative_list' %}?status=needs_changes" class="px-3 py-1.5 rounded-lg text-xs font-medium transition {% if current_status == 'needs_changes' %}bg-green-600 text-white{% else %}glass{% endif %}">Changes</a>
+                    </div>
                 </div>
             </div>
             <div class="glass rounded-2xl overflow-hidden">
@@ -58,6 +73,7 @@
                         </tbody>
                     </table>
                 </div>
+                {% include 'core/admin/_pagination.html' with items=alternatives search_query=search_query current_status=current_status %}
             </div>
         </div>
     </div>
