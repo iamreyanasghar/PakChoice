@@ -214,8 +214,8 @@ class SecuritySettingsForm(forms.ModelForm):
         model = UserProfile
         fields = ('security_question', 'security_answer')
         widgets = {
-            'security_question': forms.Select(attrs={'class': 'form-input'}),
-            'security_answer': forms.TextInput(attrs={'placeholder': 'Your security answer'}),
+            'security_question': forms.Select(attrs={'class': 'form-input', 'autocomplete': 'off'}),
+            'security_answer': forms.TextInput(attrs={'placeholder': 'Your security answer', 'autocomplete': 'off'}),
         }
 
     def __init__(self, *args, **kwargs):

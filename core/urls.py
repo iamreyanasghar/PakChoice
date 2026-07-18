@@ -30,6 +30,7 @@ urlpatterns = [
     path('admin-panel/trash/<str:model_type>/<int:pk>/restore/', admin_views.admin_trash_restore, name='admin_trash_restore'),
     path('admin-panel/trash/<str:model_type>/<int:pk>/purge/', admin_views.admin_trash_purge, name='admin_trash_purge'),
     path('admin-panel/trash/<str:model_type>/purge-all/', admin_views.admin_trash_purge_all, name='admin_trash_purge_all'),
+    path('admin-panel/trash/<str:model_type>/bulk/', admin_views.admin_trash_bulk, name='admin_trash_bulk'),
 
     # Public
     path('', views.home, name='home'),

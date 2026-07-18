@@ -1,5 +1,6 @@
 import os
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -398,9 +399,15 @@ def settings_view(request):
             if security_form.is_valid():
                 security_form.save()
                 messages.success(request, '✅ Security settings updated successfully.')
-                return redirect('settings')
+                return redirect(f"{reverse('settings')}?security_saved=1")
 
-    security_form = SecuritySettingsForm(instance=profile)
+    # After a successful save the page is reloaded via redirect (PRG). Render an
+    # empty security form so the previously entered question/answer are not
+    # repopulated in the fields on refresh.
+    if request.GET.get('security_saved'):
+        security_form = SecuritySettingsForm()
+    else:
+        security_form = SecuritySettingsForm(instance=profile)
     return render(request, 'core/settings.html', {
         'profile_form': profile_form,
         'avatar_form': avatar_form,

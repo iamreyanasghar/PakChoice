@@ -22,81 +22,139 @@
                     <a href="{% url 'admin_trash' %}" class="px-4 py-2 rounded-xl glass text-sm font-semibold transition whitespace-nowrap" style="color:var(--text-secondary)">← Back to Trash</a>
                 </div>
             </div>
-            <div class="glass rounded-2xl overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead><tr style="border-bottom:1px solid var(--border)">
-                            {% if model_type == 'categories' %}
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Icon</th>
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Name</th>
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Slug</th>
-                            {% elif model_type == 'subcategories' %}
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Icon</th>
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Name</th>
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Category</th>
-                            {% elif model_type == 'products' %}
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Name</th>
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Brand</th>
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Category</th>
-                            {% elif model_type == 'alternatives' %}
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Name</th>
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Brand</th>
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">For Product</th>
-                            {% elif model_type == 'users' %}
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">User</th>
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Email</th>
-                            {% endif %}
-                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Deleted</th>
-                            <th class="text-right px-5 py-3 font-semibold" style="color:var(--text-muted)">Actions</th>
-                        </tr></thead>
-                        <tbody>
-                            {% for item in items %}
-                            <tr style="border-bottom:1px solid var(--border)" class="hover:bg-white/5 transition">
-                                {% if model_type == 'categories' %}
-                                <td class="px-5 py-4 text-xl">{{ item.icon }}</td>
-                                <td class="px-5 py-4 font-medium">{{ item.name }}</td>
-                                <td class="px-5 py-4" style="color:var(--text-muted)">{{ item.slug }}</td>
-                                {% elif model_type == 'subcategories' %}
-                                <td class="px-5 py-4 text-xl">{{ item.icon }}</td>
-                                <td class="px-5 py-4 font-medium">{{ item.name }}</td>
-                                <td class="px-5 py-4" style="color:var(--text-muted)">{{ item.category.name }}</td>
-                                {% elif model_type == 'products' %}
-                                <td class="px-5 py-4 font-medium">{{ item.name }}</td>
-                                <td class="px-5 py-4" style="color:var(--text-muted)">{{ item.brand }}</td>
-                                <td class="px-5 py-4" style="color:var(--text-muted)">{{ item.subcategory.category.name }} › {{ item.subcategory.name }}</td>
-                                {% elif model_type == 'alternatives' %}
-                                <td class="px-5 py-4 font-medium">{{ item.name }}</td>
-                                <td class="px-5 py-4" style="color:var(--text-muted)">{{ item.brand }}</td>
-                                <td class="px-5 py-4" style="color:var(--text-muted)">{{ item.product.name }}</td>
-                                {% elif model_type == 'users' %}
-                                <td class="px-5 py-4">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                            {% if item.profile.display_name %}{{ item.profile.display_name|first|upper }}{% else %}{{ item.username|first|upper }}{% endif %}
-                                        </div>
-                                        <div>
-                                            <p class="font-medium">{{ item.profile.display_name|default:item.username }}</p>
-                                            <p class="text-xs" style="color:var(--text-muted)">@{{ item.username }}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-5 py-4 text-xs" style="color:var(--text-muted)">{{ item.email|default:"—" }}</td>
-                                {% endif %}
-                                <td class="px-5 py-4 text-xs" style="color:var(--text-muted)">{{ item.deleted_at|date:"M d, Y H:i" }}</td>
-                                <td class="px-5 py-4 text-right">
-                                    <a href="{% url 'admin_trash_restore' model_type item.pk %}" class="inline-block px-3 py-1.5 rounded-lg text-xs font-medium transition" style="color:#22c55e; border:1px solid rgba(34,197,94,0.3)">Restore</a>
-                                    <a href="{% url 'admin_trash_purge' model_type item.pk %}" class="inline-block px-3 py-1.5 rounded-lg text-xs font-medium transition ml-1" style="color:#f87171; border:1px solid rgba(239,68,68,0.3)" onclick="return confirm('Permanently delete this item? This cannot be undone.')">Purge</a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr><td colspan="6" class="px-5 py-12 text-center" style="color:var(--text-muted)">Trash is empty for this type.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+
+            <form method="post" action="{% url 'admin_trash_bulk' model_type %}" id="bulk-form">
+                {% csrf_token %}
+                <!-- Bulk action bar -->
+                <div class="flex flex-wrap items-center gap-3 mb-4" id="bulk-bar">
+                    <span class="text-sm" style="color:var(--text-muted)">
+                        <span id="selected-count">0</span> selected
+                    </span>
+                    <button type="submit" name="action" value="restore"
+                        class="px-4 py-2 rounded-xl text-sm font-semibold transition"
+                        style="color:#22c55e; border:1px solid rgba(34,197,94,0.3)">
+                        ♻️ Restore Selected
+                    </button>
+                    <button type="submit" name="action" value="purge"
+                        class="px-4 py-2 rounded-xl text-sm font-semibold transition"
+                        style="color:#f87171; border:1px solid rgba(239,68,68,0.3)"
+                        onclick="return confirm('Permanently delete the selected items? This cannot be undone.')">
+                        🗑️ Purge Selected
+                    </button>
                 </div>
-                {% include 'core/admin/_pagination.html' with items=items search_query=search_query %}
-            </div>
+
+                <div class="glass rounded-2xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead><tr style="border-bottom:1px solid var(--border)">
+                                <th class="px-3 py-3 w-12 text-center">
+                                    <input type="checkbox" id="select-all" class="trash-checkbox">
+                                </th>
+                                {% if model_type == 'categories' %}
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Icon</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Name</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Slug</th>
+                                {% elif model_type == 'subcategories' %}
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Icon</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Name</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Category</th>
+                                {% elif model_type == 'products' %}
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Name</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Brand</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Category</th>
+                                {% elif model_type == 'alternatives' %}
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Name</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Brand</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">For Product</th>
+                                {% elif model_type == 'users' %}
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">User</th>
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Email</th>
+                                {% endif %}
+                                <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Deleted</th>
+                                <th class="text-right px-5 py-3 font-semibold" style="color:var(--text-muted)">Actions</th>
+                            </tr></thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr style="border-bottom:1px solid var(--border)" class="hover:bg-white/5 transition">
+                                    <td class="px-3 py-4 w-12 text-center">
+                                        <input type="checkbox" name="selected" value="{{ item.pk }}" class="row-select trash-checkbox">
+                                    </td>
+                                    {% if model_type == 'categories' %}
+                                    <td class="px-5 py-4 text-xl">{{ item.icon }}</td>
+                                    <td class="px-5 py-4 font-medium">{{ item.name }}</td>
+                                    <td class="px-5 py-4" style="color:var(--text-muted)">{{ item.slug }}</td>
+                                    {% elif model_type == 'subcategories' %}
+                                    <td class="px-5 py-4 text-xl">{{ item.icon }}</td>
+                                    <td class="px-5 py-4 font-medium">{{ item.name }}</td>
+                                    <td class="px-5 py-4" style="color:var(--text-muted)">{{ item.category.name }}</td>
+                                    {% elif model_type == 'products' %}
+                                    <td class="px-5 py-4 font-medium">{{ item.name }}</td>
+                                    <td class="px-5 py-4" style="color:var(--text-muted)">{{ item.brand }}</td>
+                                    <td class="px-5 py-4" style="color:var(--text-muted)">{{ item.subcategory.category.name }} › {{ item.subcategory.name }}</td>
+                                    {% elif model_type == 'alternatives' %}
+                                    <td class="px-5 py-4 font-medium">{{ item.name }}</td>
+                                    <td class="px-5 py-4" style="color:var(--text-muted)">{{ item.brand }}</td>
+                                    <td class="px-5 py-4" style="color:var(--text-muted)">{{ item.product.name }}</td>
+                                    {% elif model_type == 'users' %}
+                                    <td class="px-5 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                                {% if item.profile.display_name %}{{ item.profile.display_name|first|upper }}{% else %}{{ item.username|first|upper }}{% endif %}
+                                            </div>
+                                            <div>
+                                                <p class="font-medium">{{ item.profile.display_name|default:item.username }}</p>
+                                                <p class="text-xs" style="color:var(--text-muted)">@{{ item.username }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-5 py-4 text-xs" style="color:var(--text-muted)">{{ item.email|default:"—" }}</td>
+                                    {% endif %}
+                                    <td class="px-5 py-4 text-xs" style="color:var(--text-muted)">{{ item.deleted_at|date:"M d, Y H:i" }}</td>
+                                    <td class="px-5 py-4 text-right">
+                                        <a href="{% url 'admin_trash_restore' model_type item.pk %}" class="inline-block px-3 py-1.5 rounded-lg text-xs font-medium transition" style="color:#22c55e; border:1px solid rgba(34,197,94,0.3)">Restore</a>
+                                        <a href="{% url 'admin_trash_purge' model_type item.pk %}" class="inline-block px-3 py-1.5 rounded-lg text-xs font-medium transition ml-1" style="color:#f87171; border:1px solid rgba(239,68,68,0.3)" onclick="return confirm('Permanently delete this item? This cannot be undone.')">Purge</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="7" class="px-5 py-12 text-center" style="color:var(--text-muted)">Trash is empty for this type.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% include 'core/admin/_pagination.html' with items=items search_query=search_query %}
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+<script>
+    (function () {
+        var selectAll = document.getElementById('select-all');
+        var rowSelects = document.querySelectorAll('.row-select');
+        var countEl = document.getElementById('selected-count');
+
+        function updateCount() {
+            var checked = document.querySelectorAll('.row-select:checked').length;
+            countEl.textContent = checked;
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                rowSelects.forEach(function (cb) { cb.checked = selectAll.checked; });
+                updateCount();
+            });
+        }
+
+        rowSelects.forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                updateCount();
+                var allChecked = document.querySelectorAll('.row-select:checked').length === rowSelects.length;
+                if (selectAll) { selectAll.checked = allChecked; }
+            });
+        });
+
+        updateCount();
+    })();
+</script>
 {% endblock %}

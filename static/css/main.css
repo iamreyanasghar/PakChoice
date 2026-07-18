@@ -162,6 +162,49 @@ html.light .gradient-text {
 .form-input::placeholder { color: var(--text-muted); }
 .form-input:focus { border-color: #22c55e; }
 
+/* ---------- Trash bulk-select checkboxes ---------- */
+.trash-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  position: relative;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+}
+.trash-checkbox:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+}
+.trash-checkbox:checked {
+  background: #22c55e;
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px var(--green-glow);
+}
+.trash-checkbox:checked::after {
+  content: "";
+  width: 5px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+.trash-checkbox:focus-visible {
+  outline: 2px solid var(--border-hover);
+  outline-offset: 2px;
+}
+
 /* ---------- Scrollbar ---------- */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 

@@ -48,7 +48,7 @@ def admin_overview(request):
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_category_list(request):
     query = request.GET.get('q', '').strip()
-    categories_qs = Category.objects.annotate(
+    categories_qs = Category.objects.filter(is_active=True).annotate(
         sub_count=Count('subcategories')
     ).order_by('order', 'name')
 
@@ -129,7 +129,7 @@ def admin_category_delete(request, pk):
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_subcategory_list(request):
     query = request.GET.get('q', '').strip()
-    subcategories_qs = SubCategory.objects.select_related('category').annotate(
+    subcategories_qs = SubCategory.objects.filter(is_active=True).select_related('category').annotate(
         product_count=Count('products')
     ).order_by('category__name', 'name')
 
@@ -216,7 +216,7 @@ def admin_subcategory_delete(request, pk):
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_product_list(request):
     query = request.GET.get('q', '').strip()
-    products_qs = BoycottProduct.objects.select_related(
+    products_qs = BoycottProduct.objects.filter(is_active=True).select_related(
         'subcategory__category'
     ).annotate(alt_count=Count('alternatives')).order_by('name')
 
@@ -304,7 +304,7 @@ def admin_product_delete(request, pk):
 def admin_alternative_list(request):
     alt_status = request.GET.get('status', '')
     query = request.GET.get('q', '').strip()
-    alternatives_qs = PakistaniAlternative.objects.select_related(
+    alternatives_qs = PakistaniAlternative.objects.filter(is_active=True).select_related(
         'product', 'added_by', 'reviewed_by'
     ).order_by('-created_at')
 
@@ -348,7 +348,7 @@ def admin_alternative_delete(request, pk):
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_user_list(request):
     query = request.GET.get('q', '').strip()
-    users_qs = User.objects.select_related('profile').annotate(
+    users_qs = User.objects.filter(is_active=True).select_related('profile').annotate(
         alt_count=Count('submitted_alternatives')
     ).order_by('-date_joined')
 
@@ -615,4 +615,52 @@ def admin_trash_purge_all(request, model_type):
 
     messages.success(request, f'🗑️ Purged {deleted} items older than 10 days.')
     return redirect('admin_trash')
+
+
+@user_passes_test(_admin_required, login_url='/login/')
+def admin_trash_bulk(request, model_type):
+    """Bulk restore or purge selected trashed items."""
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method.')
+        return redirect('admin_trash_list', model_type=model_type)
+
+    model_map = {
+        'categories': Category,
+        'subcategories': SubCategory,
+        'products': BoycottProduct,
+        'alternatives': PakistaniAlternative,
+        'users': User,
+    }
+
+    if model_type not in model_map:
+        messages.error(request, 'Invalid trash type.')
+        return redirect('admin_trash')
+
+    model = model_map[model_type]
+    action = request.POST.get('action')
+    selected = request.POST.getlist('selected')
+
+    if not selected:
+        messages.error(request, 'No items selected.')
+        return redirect('admin_trash_list', model_type=model_type)
+
+    pks = [int(pk) for pk in selected if pk.isdigit()]
+    items = model.objects.filter(pk__in=pks, is_active=False)
+
+    if action == 'restore':
+        restored = 0
+        for item in items:
+            item.is_active = True
+            if hasattr(item, 'deleted_at'):
+                item.deleted_at = None
+            item.save()
+            restored += 1
+        messages.success(request, f'✅ Restored {restored} item(s) from trash.')
+    elif action == 'purge':
+        deleted, _ = items.delete()
+        messages.success(request, f'🗑️ Permanently deleted {deleted} item(s).')
+    else:
+        messages.error(request, 'Invalid bulk action.')
+
+    return redirect('admin_trash_list', model_type=model_type)
 
