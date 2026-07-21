@@ -1,9 +1,8 @@
-# Fix for database tables that were created from an older schema while
-# migration 0001 was marked as applied. The Category and SubCategory tables
-# were missing the created_at column that the models define. This migration
-# adds it so the database matches the model definitions.
+# This migration is now a no-op. The created_at field it previously added
+# is already created by migration 0001. Kept as an empty migration to
+# preserve migration history for existing databases.
 
-from django.db import migrations, models
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
@@ -12,15 +11,4 @@ class Migration(migrations.Migration):
         ('core', '0002_add_missing_audit_columns'),
     ]
 
-    operations = [
-        migrations.AddField(
-            model_name='category',
-            name='created_at',
-            field=models.DateTimeField(auto_now_add=True),
-        ),
-        migrations.AddField(
-            model_name='subcategory',
-            name='created_at',
-            field=models.DateTimeField(auto_now_add=True),
-        ),
-    ]
+    operations = []

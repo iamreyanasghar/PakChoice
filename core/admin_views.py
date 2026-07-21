@@ -1,13 +1,31 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+User = get_user_model()
 from django.db.models import Count, Q
 from django.utils import timezone
 from django.core.paginator import Paginator
 from datetime import timedelta
 from .models import Category, SubCategory, BoycottProduct, PakistaniAlternative, UserProfile
 from .admin_forms import CategoryForm, SubCategoryForm, ProductForm, AlternativeModerationForm, UserEditForm, UserProfileEditForm
+
+# Trash model mappings (extracted to avoid repetition)
+TRASH_MODEL_MAP = {
+    'categories': (Category, 'category'),
+    'subcategories': (SubCategory, 'subcategory'),
+    'products': (BoycottProduct, 'product'),
+    'alternatives': (PakistaniAlternative, 'alternative'),
+    'users': (User, 'user'),
+}
+
+TRASH_MODEL_CLASSES = {
+    'categories': Category,
+    'subcategories': SubCategory,
+    'products': BoycottProduct,
+    'alternatives': PakistaniAlternative,
+    'users': User,
+}
 
 
 def _admin_required(user):
@@ -464,19 +482,11 @@ def admin_trash(request):
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_trash_list(request, model_type):
     """Generic trash list view for any model type."""
-    model_map = {
-        'categories': (Category, 'category'),
-        'subcategories': (SubCategory, 'subcategory'),
-        'products': (BoycottProduct, 'product'),
-        'alternatives': (PakistaniAlternative, 'alternative'),
-        'users': (User, 'user'),
-    }
-
-    if model_type not in model_map:
+    if model_type not in TRASH_MODEL_MAP:
         messages.error(request, 'Invalid trash type.')
         return redirect('admin_trash')
 
-    model, name = model_map[model_type]
+    model, name = TRASH_MODEL_MAP[model_type]
     query = request.GET.get('q', '').strip()
 
     if model_type == 'users':
@@ -528,19 +538,11 @@ def admin_trash_list(request, model_type):
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_trash_restore(request, model_type, pk):
     """Restore an item from trash."""
-    model_map = {
-        'categories': Category,
-        'subcategories': SubCategory,
-        'products': BoycottProduct,
-        'alternatives': PakistaniAlternative,
-        'users': User,
-    }
-
-    if model_type not in model_map:
+    if model_type not in TRASH_MODEL_CLASSES:
         messages.error(request, 'Invalid trash type.')
         return redirect('admin_trash')
 
-    model = model_map[model_type]
+    model = TRASH_MODEL_CLASSES[model_type]
     item = get_object_or_404(model, pk=pk, is_active=False)
 
     if request.method == 'POST':
@@ -560,19 +562,11 @@ def admin_trash_restore(request, model_type, pk):
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_trash_purge(request, model_type, pk):
     """Permanently delete an item from trash."""
-    model_map = {
-        'categories': Category,
-        'subcategories': SubCategory,
-        'products': BoycottProduct,
-        'alternatives': PakistaniAlternative,
-        'users': User,
-    }
-
-    if model_type not in model_map:
+    if model_type not in TRASH_MODEL_CLASSES:
         messages.error(request, 'Invalid trash type.')
         return redirect('admin_trash')
 
-    model = model_map[model_type]
+    model = TRASH_MODEL_CLASSES[model_type]
     item = get_object_or_404(model, pk=pk, is_active=False)
 
     if request.method == 'POST':
@@ -594,19 +588,11 @@ def admin_trash_purge_all(request, model_type):
         messages.error(request, 'Invalid request method.')
         return redirect('admin_trash')
 
-    model_map = {
-        'categories': Category,
-        'subcategories': SubCategory,
-        'products': BoycottProduct,
-        'alternatives': PakistaniAlternative,
-        'users': User,
-    }
-
-    if model_type not in model_map:
+    if model_type not in TRASH_MODEL_CLASSES:
         messages.error(request, 'Invalid trash type.')
         return redirect('admin_trash')
 
-    model = model_map[model_type]
+    model = TRASH_MODEL_CLASSES[model_type]
     purge_cutoff = timezone.now() - timedelta(days=10)
     if model_type == 'users':
         deleted, _ = model.objects.filter(is_active=False).delete()
@@ -624,19 +610,11 @@ def admin_trash_bulk(request, model_type):
         messages.error(request, 'Invalid request method.')
         return redirect('admin_trash_list', model_type=model_type)
 
-    model_map = {
-        'categories': Category,
-        'subcategories': SubCategory,
-        'products': BoycottProduct,
-        'alternatives': PakistaniAlternative,
-        'users': User,
-    }
-
-    if model_type not in model_map:
+    if model_type not in TRASH_MODEL_CLASSES:
         messages.error(request, 'Invalid trash type.')
         return redirect('admin_trash')
 
-    model = model_map[model_type]
+    model = TRASH_MODEL_CLASSES[model_type]
     action = request.POST.get('action')
     selected = request.POST.getlist('selected')
 

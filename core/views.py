@@ -1,12 +1,13 @@
 import os
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
-from django.contrib.auth import login, logout, update_session_auth_hash
-from django.contrib.auth.models import User
+from django.contrib.auth import login, logout, update_session_auth_hash, get_user_model
+User = get_user_model()
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.db.models import Q, F, Count
+from django.db import transaction, IntegrityError
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
@@ -20,8 +21,74 @@ def _staff_required(user):
     return user.is_active and user.is_staff
 
 
+def health(request):
+    return JsonResponse({"status": "ok"})
+
+
+def custom_404(request, exception):
+    return render(request, 'core/404.html', status=404)
+
+
+def custom_500(request):
+    return render(request, 'core/500.html', status=500)
+
+
+def sitemap(request):
+    """Generate a simple XML sitemap of public pages."""
+    from django.urls import reverse
+    from django.utils import timezone
+    
+    urls = [
+        {'loc': request.build_absolute_uri(reverse('home')), 'priority': '1.0', 'changefreq': 'daily'},
+        {'loc': request.build_absolute_uri(reverse('search')), 'priority': '0.8', 'changefreq': 'daily'},
+    ]
+    
+    # Add categories
+    for category in Category.objects.filter(is_active=True):
+        urls.append({
+            'loc': request.build_absolute_uri(reverse('category_detail', args=[category.slug])),
+            'priority': '0.7',
+            'changefreq': 'weekly',
+            'lastmod': category.updated_at.isoformat() if category.updated_at else timezone.now().isoformat(),
+        })
+    
+    # Add subcategories
+    for subcategory in SubCategory.objects.filter(is_active=True).select_related('category'):
+        urls.append({
+            'loc': request.build_absolute_uri(reverse('subcategory_detail', args=[subcategory.category.slug, subcategory.slug])),
+            'priority': '0.6',
+            'changefreq': 'weekly',
+            'lastmod': subcategory.updated_at.isoformat() if subcategory.updated_at else timezone.now().isoformat(),
+        })
+    
+    # Add products
+    for product in BoycottProduct.objects.filter(verified=True, is_active=True):
+        urls.append({
+            'loc': request.build_absolute_uri(reverse('product_detail', args=[product.slug])),
+            'priority': '0.5',
+            'changefreq': 'weekly',
+            'lastmod': product.updated_at.isoformat() if product.updated_at else timezone.now().isoformat(),
+        })
+    
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>']
+    xml.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+    for url in urls:
+        xml.append('  <url>')
+        xml.append(f'    <loc>{url["loc"]}</loc>')
+        if 'lastmod' in url:
+            xml.append(f'    <lastmod>{url["lastmod"]}</lastmod>')
+        xml.append(f'    <changefreq>{url["changefreq"]}</changefreq>')
+        xml.append(f'    <priority>{url["priority"]}</priority>')
+        xml.append('  </url>')
+    xml.append('</urlset>')
+    
+    return HttpResponse('\n'.join(xml), content_type='application/xml')
+
+
 def home(request):
-    categories = Category.objects.filter(is_active=True).prefetch_related('subcategories').all()
+    categories = Category.objects.filter(is_active=True).annotate(
+        subcategory_count=Count('subcategories')
+    ).prefetch_related('subcategories').all()
     total_products = BoycottProduct.objects.filter(verified=True, is_active=True).count()
     total_alternatives = PakistaniAlternative.objects.filter(status='approved', is_active=True).count()
     return render(request, 'core/home.html', {
@@ -33,14 +100,18 @@ def home(request):
 
 def category_detail(request, slug):
     category = get_object_or_404(Category, slug=slug, is_active=True)
-    subcategories = category.subcategories.filter(is_active=True).prefetch_related('products').all()
+    subcategories = category.subcategories.filter(is_active=True).annotate(
+        product_count=Count('products')
+    ).prefetch_related('products').all()
     return render(request, 'core/category.html', {'category': category, 'subcategories': subcategories})
 
 
 def subcategory_detail(request, cat_slug, sub_slug):
     category = get_object_or_404(Category, slug=cat_slug, is_active=True)
     subcategory = get_object_or_404(SubCategory, category=category, slug=sub_slug, is_active=True)
-    products = subcategory.products.filter(verified=True, is_active=True).prefetch_related('alternatives')
+    products = subcategory.products.filter(verified=True, is_active=True).annotate(
+        alternative_count=Count('alternatives')
+    ).prefetch_related('alternatives')
     return render(request, 'core/subcategory.html', {
         'category': category, 'subcategory': subcategory, 'products': products
     })
@@ -83,15 +154,22 @@ def add_alternative(request, slug):
 @rate_limit(key_prefix='upvote', limit=30, period=60)
 def upvote_alternative(request, pk):
     alt = get_object_or_404(PakistaniAlternative, pk=pk, status='approved')
-    vote, created = AlternativeVote.objects.get_or_create(user=request.user, alternative=alt)
-    if created:
-        PakistaniAlternative.objects.filter(pk=pk).update(upvotes=F('upvotes') + 1)
+    with transaction.atomic():
+        alt = PakistaniAlternative.objects.select_for_update().get(pk=pk)
+        existing_vote = AlternativeVote.objects.filter(
+            user=request.user, alternative=alt
+        ).first()
+        if existing_vote:
+            existing_vote.delete()
+            alt.upvotes = F('upvotes') - 1
+            voted = False
+        else:
+            AlternativeVote.objects.create(user=request.user, alternative=alt)
+            alt.upvotes = F('upvotes') + 1
+            voted = True
+        alt.save()
         alt.refresh_from_db(fields=['upvotes'])
-        return JsonResponse({'upvotes': alt.upvotes, 'voted': True})
-    vote.delete()
-    PakistaniAlternative.objects.filter(pk=pk).update(upvotes=F('upvotes') - 1)
-    alt.refresh_from_db(fields=['upvotes'])
-    return JsonResponse({'upvotes': max(0, alt.upvotes), 'voted': False})
+    return JsonResponse({'upvotes': max(0, alt.upvotes), 'voted': voted})
 
 
 from django.core.paginator import Paginator
@@ -190,8 +268,7 @@ def login_view(request):
         return redirect('dashboard')
     
     if request.method == 'POST':
-        username = request.POST.get('username', '')
-        log_security_event('login_failed', f'Failed login attempt for username: {username}', request=request)
+        log_security_event('login_failed', 'Failed login attempt', request=request)
     
     return render(request, 'core/auth.html', {'form': form, 'mode': 'login'})
 
@@ -364,25 +441,22 @@ def settings_view(request):
         elif action == 'avatar':
             if request.POST.get('remove_avatar'):
                 if profile.avatar:
-                    # Delete the old file from filesystem
                     old_file = profile.avatar.path if hasattr(profile.avatar, 'path') else None
-                    profile.avatar.delete(save=False)
                     profile.avatar = None
                     profile.save()
-                    # Also remove the file from filesystem if it still exists
                     if old_file and os.path.exists(old_file):
                         os.remove(old_file)
                     messages.success(request, '✅ Avatar removed successfully.')
                 return redirect('settings')
             avatar_form = AvatarForm(request.POST, request.FILES, instance=profile)
             if avatar_form.is_valid():
-                # Delete old avatar file if replacing
                 if profile.avatar:
                     old_file = profile.avatar.path if hasattr(profile.avatar, 'path') else None
-                    profile.avatar.delete(save=False)
+                    avatar_form.save()
                     if old_file and os.path.exists(old_file):
                         os.remove(old_file)
-                avatar_form.save()
+                else:
+                    avatar_form.save()
                 messages.success(request, '✅ Avatar updated successfully.')
                 return redirect('settings')
 
@@ -399,15 +473,9 @@ def settings_view(request):
             if security_form.is_valid():
                 security_form.save()
                 messages.success(request, '✅ Security settings updated successfully.')
-                return redirect(f"{reverse('settings')}?security_saved=1")
+                return redirect('settings')
 
-    # After a successful save the page is reloaded via redirect (PRG). Render an
-    # empty security form so the previously entered question/answer are not
-    # repopulated in the fields on refresh.
-    if request.GET.get('security_saved'):
-        security_form = SecuritySettingsForm()
-    else:
-        security_form = SecuritySettingsForm(instance=profile)
+    security_form = SecuritySettingsForm(instance=profile)
     return render(request, 'core/settings.html', {
         'profile_form': profile_form,
         'avatar_form': avatar_form,

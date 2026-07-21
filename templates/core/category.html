@@ -31,7 +31,7 @@
                 </div>
                 <div>
                     <h3 class="font-bold group-hover:text-green-500 transition">{{ sub.name }}</h3>
-                    <p class="text-xs" style="color:var(--text-muted)">{{ sub.products.count }} products</p>
+                    <p class="text-xs" style="color:var(--text-muted)">{{ sub.product_count }} products</p>
                 </div>
             </div>
             {% with sub.products.all|slice:":3" as preview %}
@@ -40,8 +40,8 @@
                 {% for p in preview %}
                 <span class="text-xs px-2 py-1 rounded-lg tag-red">{{ p.name }}</span>
                 {% endfor %}
-                {% if sub.products.count > 3 %}
-                <span class="text-xs px-2 py-1 rounded-lg glass" style="color:var(--text-muted)">+{{ sub.products.count|add:"-3" }} more</span>
+                {% if sub.product_count > 3 %}
+                <span class="text-xs px-2 py-1 rounded-lg glass" style="color:var(--text-muted)">+{{ sub.product_count|add:"-3" }} more</span>
                 {% endif %}
             </div>
             {% endif %}

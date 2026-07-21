@@ -1,0 +1,15 @@
+{% extends 'core/base.html' %}
+{% block title %}Server Error — PakChoice{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center px-4 py-12">
+    <div class="text-center">
+        <div class="text-8xl mb-6">⚠️</div>
+        <h1 class="text-4xl font-black mb-4">Server Error</h1>
+        <p class="text-lg mb-8" style="color:var(--text-secondary)">Something went wrong on our end. Please try again later.</p>
+        <a href="{% url 'home' %}" class="px-8 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold transition shadow-lg shadow-green-900/30">
+            ← Back to Home
+        </a>
+    </div>
+</div>
+{% endblock %}

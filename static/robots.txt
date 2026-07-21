@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin-panel/
+Disallow: /account/
+Disallow: /forgot-password/
+Disallow: /verify-security/
+Disallow: /reset-password/
+Disallow: /health/
+
+Sitemap: https://yourdomain.com/sitemap.xml

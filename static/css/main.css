@@ -217,13 +217,25 @@ html.light .gradient-text {
   from { transform: translateY(20px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
+@keyframes slideInFromTop {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+@keyframes slideOutToTop {
+  from { transform: translateY(0);     opacity: 1; }
+  to   { transform: translateY(-100%); opacity: 0; }
+}
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
   100% { background-position:  200% 0; }
 }
 
-.animate-fade-in  { animation: fadeIn  0.5s ease-in-out; }
-.animate-slide-up { animation: slideUp 0.4s ease-out; }
+.animate-fade-in     { animation: fadeIn       0.5s ease-in-out; }
+.animate-slide-up    { animation: slideUp      0.4s ease-out; }
+.flash-msg           { animation: slideInFromTop 0.4s ease-out; }
+.flash-msg.animate-slide-out {
+  animation: slideOutToTop 0.4s ease-in forwards;
+}
 
 /* ---------- Theme Toggle Button ---------- */
 .theme-toggle {

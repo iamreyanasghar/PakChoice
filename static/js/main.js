@@ -30,11 +30,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Auto-hide flash messages ──────────────────────────
   setTimeout(() => {
-    document.querySelectorAll('.flash-msg').forEach(el => {
-      el.style.transition = 'opacity 0.5s, transform 0.5s';
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(-8px)';
-      setTimeout(() => el.remove(), 500);
+    const messages = document.querySelectorAll('.flash-msg');
+    messages.forEach((el, index) => {
+      setTimeout(() => {
+        el.classList.add('animate-slide-out');
+        el.addEventListener('animationend', () => {
+          el.remove();
+          const container = document.getElementById('flash-messages');
+          if (container && !container.querySelector('.flash-msg')) {
+            container.style.display = 'none';
+          }
+        }, { once: true });
+      }, index * 100);
     });
   }, 4000);
 

@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordChangeForm as DjangoPasswordChangeForm
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+User = get_user_model()
 from .models import PakistaniAlternative, UserProfile
 
 
@@ -44,23 +45,22 @@ class LoginForm(AuthenticationForm):
 
     def clean(self):
         from django.core.cache import cache
-        from django.contrib.auth.models import User
+        from django.contrib.auth import authenticate
         
         username = self.cleaned_data.get('username')
         password = self.cleaned_data.get('password')
 
         if username and password:
-            # Check for account lockout
-            lockout_key = f"login_lockout_{username}"
+            # Rate limit by IP address to prevent username enumeration
+            ip_address = self.request.META.get('REMOTE_ADDR', 'unknown') if self.request else 'unknown'
+            lockout_key = f"login_lockout_{ip_address}"
             if cache.get(lockout_key):
                 raise forms.ValidationError(
-                    "Account temporarily locked due to too many failed login attempts. Please try again later.",
+                    "Too many failed login attempts. Please try again later.",
                     code='account_locked',
                 )
 
             # Try authenticating with username first
-            from django.contrib.auth import authenticate
-
             user = authenticate(self.request, username=username, password=password)
             if user is None:
                 # If username auth fails, try email
@@ -71,27 +71,27 @@ class LoginForm(AuthenticationForm):
                     pass
 
             if user is None:
-                # Increment failed attempts
-                fail_key = f"login_fails_{username}"
+                # Increment failed attempts (IP-based to prevent enumeration)
+                fail_key = f"login_fails_{ip_address}"
                 fails = cache.get(fail_key, 0) + 1
                 cache.set(fail_key, fails, 900)  # 15 minutes
                 
-                # Lock account after 5 failed attempts
+                # Lock IP after 5 failed attempts
                 if fails >= 5:
                     cache.set(lockout_key, True, 900)  # 15 minute lockout
                     raise forms.ValidationError(
-                        "Too many failed login attempts. Account locked for 15 minutes.",
+                        "Too many failed login attempts. Please try again later.",
                         code='account_locked',
                     )
                 
-                remaining = 5 - fails
+                # Generic error message - do not reveal whether username exists
                 raise forms.ValidationError(
-                    f"Please enter a correct username/email and password. {remaining} attempt{'s' if remaining != 1 else ''} remaining before lockout.",
+                    "Please enter a correct username/email and password.",
                     code='invalid_login',
                 )
             
             # Clear failed attempts on successful login
-            cache.delete(f"login_fails_{username}")
+            cache.delete(f"login_fails_{ip_address}")
             cache.delete(lockout_key)
             self.user_cache = user
 
@@ -225,6 +225,11 @@ class SecuritySettingsForm(forms.ModelForm):
         # Don't show the hashed answer in the form
         if self.instance and self.instance.security_answer:
             self.fields['security_answer'].help_text = 'Leave blank to keep current answer'
+        # Clear both fields for unbound forms (GET requests) so previously
+        # entered values are never repopulated on refresh.
+        if not self.is_bound:
+            self.initial['security_question'] = ''
+            self.initial['security_answer'] = ''
 
     def save(self, commit=True):
         profile = super().save(commit=False)

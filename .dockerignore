@@ -1,0 +1,60 @@
+# ============================================
+# .dockerignore
+# ============================================
+# This file tells Docker which files/folders to
+# EXCLUDE from the Docker build context (the files
+# sent to the Docker daemon when building an image).
+# This makes builds faster and images smaller.
+# ============================================
+
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+venv
+.venv
+*.egg-info
+dist
+build
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Django
+staticfiles
+media
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files (never copy secrets into images!)
+.env
+.env.local
+.env.*.local
+
+# Documentation (optional - remove if you want docs in image)
+*.md
+!README.md
+
+# Tests (optional - remove if you want tests in image)
+core/tests.py

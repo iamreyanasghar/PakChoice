@@ -12,6 +12,41 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
 
+    <!-- SEO: Canonical URL -->
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+
+    <!-- SEO: Noindex for admin/private pages -->
+    {% if request.path|slice:":13" == "/admin-panel/" or request.path|slice:":9" == "/account/" or request.path|slice:":17" == "/forgot-password/" or request.path|slice:":16" == "/verify-security/" or request.path|slice:":15" == "/reset-password/" %}
+    <meta name="robots" content="noindex, nofollow">
+    {% endif %}
+
+    <!-- Open Graph / Social Sharing -->
+    <meta property="og:title" content="{% block og_title %}PakChoice — Boycott the Oppressors. Buy Pakistani.{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Discover Pakistani alternatives to boycott products. Support local Pakistani businesses and find local replacements for international brands.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{% static 'img/logo.png' %}{% endblock %}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="PakChoice — Boycott the Oppressors. Buy Pakistani.">
+    <meta name="twitter:description" content="Discover Pakistani alternatives to boycott products. Support local Pakistani businesses and find local replacements for international brands.">
+    <meta name="twitter:image" content="{% static 'img/logo.png' %}">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "PakChoice",
+      "description": "Discover Pakistani alternatives to boycott products. Support local Pakistani businesses and find local replacements for international brands.",
+      "url": "{{ request.build_absolute_uri|slice:':-1' }}",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "{{ request.build_absolute_uri|slice:':-1' }}/search/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
     <!-- Preconnect to CDNs -->
     <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
@@ -157,16 +192,18 @@
 </nav>
 
 <!-- ── Flash Messages ─────────────────────────────────── -->
-{% if messages %}
-<div class="max-w-7xl mx-auto px-4 pt-4 space-y-2">
-    {% for msg in messages %}
-    <div class="flash-msg px-4 py-3 rounded-xl text-sm font-medium animate-slide-up
-        {% if msg.tags == 'success' %}tag-green{% elif msg.tags == 'error' %}tag-red{% else %}glass{% endif %}">
-        {{ msg }}
+<div id="flash-messages" class="fixed top-16 left-0 right-0 z-40 pointer-events-none flex justify-center">
+    {% if messages %}
+    <div class="max-w-md px-4 pt-4 space-y-2 pointer-events-auto">
+        {% for msg in messages %}
+        <div class="flash-msg px-4 py-3 rounded-xl text-sm font-medium text-center
+            {% if msg.tags == 'success' %}tag-green{% elif msg.tags == 'error' %}tag-red{% else %}glass{% endif %}">
+            {{ msg }}
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
+    {% endif %}
 </div>
-{% endif %}
 
 <!-- ── Page Content ───────────────────────────────────── -->
 <main class="flex-1">

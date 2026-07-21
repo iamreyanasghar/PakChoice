@@ -67,7 +67,7 @@
                 </svg>
             </div>
             <h3 class="font-bold text-lg mb-1">{{ category.name }}</h3>
-            <p class="text-sm mb-3" style="color:var(--text-muted)">{{ category.subcategories.count }} subcategories</p>
+            <p class="text-sm mb-3" style="color:var(--text-muted)">{{ category.subcategory_count }} subcategories</p>
             {% if category.description %}
             <p class="text-xs line-clamp-2" style="color:var(--text-muted)">{{ category.description }}</p>
             {% endif %}

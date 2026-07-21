@@ -10,14 +10,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='')
 
 if not SECRET_KEY:
-    import secrets
-    SECRET_KEY = secrets.token_urlsafe(50)
-    import warnings
-    warnings.warn('SECRET_KEY not set in .env. Generated a random one. Set SECRET_KEY in .env for production.')
+    if DEBUG:
+        import secrets
+        SECRET_KEY = secrets.token_urlsafe(50)
+    else:
+        raise RuntimeError('SECRET_KEY must be set in .env for production.')
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',') if config('ALLOWED_HOSTS', default='') else []
+
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='').split(',') if config('CSRF_TRUSTED_ORIGINS', default='') else []
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -66,12 +69,13 @@ WSGI_APPLICATION = 'boycott_pk.wsgi.application'
 # Database
 DATABASES = {
     'default': {
-        'ENGINE': config('DB_ENGINE', default='django.db.backends.sqlite3'),
+        'ENGINE': config('DB_ENGINE', default='django.db.backends.mysql'),
         'NAME': config('DB_NAME', default=str(BASE_DIR / 'db.sqlite3')),
         'USER': config('DB_USER', default=''),
         'PASSWORD': config('DB_PASSWORD', default=''),
         'HOST': config('DB_HOST', default=''),
         'PORT': config('DB_PORT', default=''),
+        'CONN_MAX_AGE': 60,
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         } if config('DB_ENGINE', default='django.db.backends.sqlite3') != 'django.db.backends.sqlite3' else {},
@@ -166,3 +170,7 @@ LOGGING = {
         },
     },
 }
+
+# Custom error handlers
+handler404 = 'core.views.custom_404'
+handler500 = 'core.views.custom_500'

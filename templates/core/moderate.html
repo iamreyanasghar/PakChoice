@@ -5,8 +5,8 @@
 <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
     <div class="flex items-center gap-3 mb-8">
-        <a href="{% url 'admin_dashboard' %}" class="text-sm glass px-3 py-1.5 rounded-lg glass-hover transition" style="color:var(--text-secondary)">
-            ← Back to queue
+        <a href="{% url 'admin_alternative_list' %}" class="text-sm glass px-3 py-1.5 rounded-lg glass-hover transition" style="color:var(--text-secondary)">
+            ← Back to Alternatives
         </a>
         <span class="text-sm px-3 py-1 rounded-full
             {% if alt.status == 'approved' %}tag-green
@@ -94,7 +94,7 @@
             </div>
             <div>
                 <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">
-                    Rejection / Change Reason <span class="normal-case" style="color:var(--text-muted)">(emailed to user on reject or needs-changes)</span>
+                    Rejection / Change Reason
                 </label>
                 {{ form.rejection_reason }}
             </div>
