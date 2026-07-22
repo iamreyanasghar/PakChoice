@@ -8,7 +8,7 @@ from decouple import config
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='')
-
+DEBUG = config('DEBUG', default=False, cast=bool)
 if not SECRET_KEY:
     if DEBUG:
         import secrets
@@ -16,7 +16,6 @@ if not SECRET_KEY:
     else:
         raise RuntimeError('SECRET_KEY must be set in .env for production.')
 
-DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',') if config('ALLOWED_HOSTS', default='') else []
 
@@ -146,6 +145,9 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
         'file': {
             'level': 'WARNING',
             'class': 'logging.FileHandler',
@@ -159,9 +161,14 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
-            'level': 'WARNING',
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
             'propagate': True,
+        },
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
         },
         'django.security': {
             'handlers': ['security_file'],
