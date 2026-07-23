@@ -193,6 +193,15 @@ class UserProfileModelTests(TestCase):
         self.user.profile.display_name = ''
         self.user.profile.save()
         self.assertEqual(self.user.profile.get_display_name(), self.user.username)
+        # Test first_name + last_name fallback
+        self.user.first_name = 'John'
+        self.user.last_name = 'Doe'
+        self.user.save()
+        self.assertEqual(self.user.profile.get_display_name(), 'John Doe')
+        # Test first_name only fallback
+        self.user.last_name = ''
+        self.user.save()
+        self.assertEqual(self.user.profile.get_display_name(), 'John')
 
     def test_security_answer_hashing(self):
         self.user.profile.set_security_answer('mysecret')
@@ -319,6 +328,8 @@ class AuthViewTests(TestCase):
     def test_register_view_post_success(self):
         response = self.client.post(reverse('register'), {
             'username': 'newuser',
+            'first_name': 'New',
+            'last_name': 'User',
             'display_name': 'New User',
             'email': 'new@example.com',
             'password1': 'newpass123',
@@ -726,6 +737,8 @@ class RegisterFormTests(TestCase):
     def test_valid_form(self):
         form = RegisterForm(data={
             'username': 'newuser',
+            'first_name': 'New',
+            'last_name': 'User',
             'display_name': 'New User',
             'email': 'new@example.com',
             'password1': 'newpass123',
@@ -738,6 +751,8 @@ class RegisterFormTests(TestCase):
     def test_password_mismatch(self):
         form = RegisterForm(data={
             'username': 'newuser',
+            'first_name': 'New',
+            'last_name': 'User',
             'email': 'new@example.com',
             'password1': 'newpass123',
             'password2': 'differentpass',
@@ -894,6 +909,8 @@ class FullWorkflowTests(TestCase):
         # 1. Register
         response = self.client.post(reverse('register'), {
             'username': 'newuser',
+            'first_name': 'New',
+            'last_name': 'User',
             'display_name': 'New User',
             'email': 'new@example.com',
             'password1': 'newpass123',

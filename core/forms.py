@@ -6,6 +6,16 @@ from .models import PakistaniAlternative, UserProfile
 
 
 class RegisterForm(UserCreationForm):
+    first_name = forms.CharField(
+        max_length=150,
+        required=True,
+        widget=forms.TextInput(attrs={'placeholder': 'First name'})
+    )
+    last_name = forms.CharField(
+        max_length=150,
+        required=True,
+        widget=forms.TextInput(attrs={'placeholder': 'Last name'})
+    )
     email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'placeholder': 'your@email.com'}))
     display_name = forms.CharField(max_length=100, required=False, widget=forms.TextInput(attrs={'placeholder': 'How should we call you?'}))
     security_question = forms.ChoiceField(
@@ -16,12 +26,16 @@ class RegisterForm(UserCreationForm):
     security_answer = forms.CharField(
         max_length=100,
         required=True,
-        widget=forms.TextInput(attrs={'placeholder': 'Your security answer'})
+        widget=forms.TextInput(attrs={'placeholder': 'Your security answer', 'autocomplete': 'off'})
+    )
+    avatar = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={'accept': 'image/*', 'class': 'form-input'})
     )
 
     class Meta:
         model = User
-        fields = ('username', 'display_name', 'email', 'password1', 'password2', 'security_question', 'security_answer')
+        fields = ('username', 'first_name', 'last_name', 'display_name', 'email', 'password1', 'password2', 'security_question', 'security_answer', 'avatar')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -30,6 +44,7 @@ class RegisterForm(UserCreationForm):
         self.fields['username'].help_text = None
         self.fields['password1'].help_text = None
         self.fields['password2'].help_text = None
+        self.fields['avatar'].help_text = None
 
 
 class LoginForm(AuthenticationForm):
@@ -42,6 +57,7 @@ class LoginForm(AuthenticationForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'form-input'
+        self.fields['password'].widget.attrs['placeholder'] = 'Enter your password'
 
     def clean(self):
         from django.core.cache import cache

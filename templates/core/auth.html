@@ -1,46 +1,360 @@
 {% extends 'core/base.html' %}
 {% block title %}{% if mode == 'login' %}Login{% else %}Register{% endif %} — PakChoice{% endblock %}
 
+{% block extra_css %}
+<style>
+/* ── Step Wizard Styles ─────────────────────────────── */
+.step-wizard {
+  position: relative;
+}
+
+.step-indicators {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.step-circle {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+}
+
+.step-circle.active {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #fff;
+  box-shadow: 0 0 20px rgba(34,197,94,0.3);
+}
+
+.step-circle.completed {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #fff;
+}
+
+.step-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+.step-label.active {
+  color: #22c55e;
+}
+
+.step-label.completed {
+  color: #22c55e;
+}
+
+.step-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  margin: 0 0.5rem;
+  margin-bottom: 1.5rem;
+  transition: background 0.3s ease;
+}
+
+.step-connector.completed {
+  background: #22c55e;
+}
+
+/* ── Step Content ──────────────────────────────────── */
+.step-content {
+  display: none;
+  animation: stepFadeIn 0.4s ease-out;
+}
+
+.step-content.active {
+  display: block;
+}
+
+@keyframes stepFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Avatar Upload ─────────────────────────────────── */
+.avatar-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: 1rem;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--bg-card);
+}
+
+.avatar-upload-area:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+}
+
+.avatar-upload-area.dragover {
+  border-color: #22c55e;
+  background: rgba(34,197,94,0.05);
+}
+
+.avatar-preview {
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--border-hover);
+  margin: 0 auto 1rem;
+  display: none;
+}
+
+.avatar-preview.visible {
+  display: block;
+}
+
+.avatar-placeholder {
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22c55e, #86efac);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 2rem;
+  color: #fff;
+}
+
+.avatar-placeholder.hidden {
+  display: none;
+}
+
+/* ── Navigation Buttons ────────────────────────────── */
+.step-nav {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.step-nav .btn-back,
+.step-nav .btn-next {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.step-nav .btn-back {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+}
+
+.step-nav .btn-back:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.step-nav .btn-next {
+  border: none;
+  background: #22c55e;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(34,197,94,0.3);
+}
+
+.step-nav .btn-next:hover {
+  background: #16a34a;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34,197,94,0.4);
+}
+
+.step-nav .btn-next:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── Validation States ─────────────────────────────── */
+.field-error {
+  border-color: #ef4444 !important;
+}
+
+.field-success {
+  border-color: #22c55e !important;
+}
+
+.validation-msg {
+  font-size: 0.75rem;
+  margin-top: 0.375rem;
+  display: none;
+}
+
+.validation-msg.error {
+  display: block;
+  color: #fca5a5;
+}
+
+.validation-msg.success {
+  display: block;
+  color: #86efac;
+}
+
+/* ── Responsive ────────────────────────────────────── */
+@media (max-width: 640px) {
+  .step-label {
+    font-size: 0.65rem;
+  }
+  .step-circle {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.75rem;
+  }
+  .step-connector {
+    margin: 0 0.25rem;
+    margin-bottom: 1.25rem;
+  }
+}
+
+/* ── Screen Reader Only ────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="min-h-[80vh] flex items-center justify-center px-4 py-12">
-    <div class="w-full max-w-md">
+    <div class="w-full max-w-lg">
         <div class="text-center mb-8">
             <span class="text-5xl block mb-4">🇵🇰</span>
             <h1 class="text-3xl font-black gradient-text">
                 {% if mode == 'login' %}Welcome Back{% else %}Join PakChoice{% endif %}
             </h1>
             <p class="mt-2 text-sm" style="color:var(--text-muted)">
-                {% if mode == 'login' %}Login to suggest Pakistani alternatives{% else %}Register to contribute to the community{% endif %}
+                {% if mode == 'login' %}Login to suggest Pakistani alternatives{% else %}Create your account in 4 easy steps{% endif %}
             </p>
         </div>
 
-        <div class="glass rounded-3xl p-8">
-            <form method="post" class="space-y-5">
-                {% csrf_token %}
-                {% if form.non_field_errors %}
-                <div class="tag-red text-xs px-3 py-2 rounded-lg">
-                    {{ form.non_field_errors.0 }}
+        <div class="glass rounded-3xl p-6 sm:p-8">
+            {% if mode == 'register' %}
+            <!-- Step Progress Indicators -->
+            <div class="step-wizard">
+                <div class="step-indicators" role="tablist" aria-label="Registration steps">
+                    <div class="step-indicator" role="tab" aria-selected="true" aria-label="Step 1: Account" id="tab-step-1">
+                        <div class="step-circle active" id="circle-step-1">1</div>
+                        <span class="step-label active" id="label-step-1">Account</span>
+                    </div>
+                    <div class="step-connector" id="connector-1-2"></div>
+                    <div class="step-indicator" role="tab" aria-selected="false" aria-label="Step 2: Password" id="tab-step-2">
+                        <div class="step-circle" id="circle-step-2">2</div>
+                        <span class="step-label" id="label-step-2">Password</span>
+                    </div>
+                    <div class="step-connector" id="connector-2-3"></div>
+                    <div class="step-indicator" role="tab" aria-selected="false" aria-label="Step 3: Security" id="tab-step-3">
+                        <div class="step-circle" id="circle-step-3">3</div>
+                        <span class="step-label" id="label-step-3">Security</span>
+                    </div>
+                    <div class="step-connector" id="connector-3-4"></div>
+                    <div class="step-indicator" role="tab" aria-selected="false" aria-label="Step 4: Profile" id="tab-step-4">
+                        <div class="step-circle" id="circle-step-4">4</div>
+                        <span class="step-label" id="label-step-4">Profile</span>
+                    </div>
                 </div>
-                {% endif %}
-                {% for field in form %}
-                <div>
-                    <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">
-                        {{ field.label }}
-                        {% if mode == 'register' and field.html_name == 'display_name' %}
-                        <span class="ml-1 normal-case text-xs px-1.5 py-0.5 rounded tag-green">optional</span>
-                        {% endif %}
-                    </label>
-                    {{ field }}
-                    {% if field.errors %}
-                    <p class="tag-red text-xs mt-2 px-3 py-2 rounded-lg">{{ field.errors.0 }}</p>
-                    {% endif %}
-                    {% if mode == 'register' and field.html_name == 'email' %}
-                <p class="text-xs mt-1" style="color:var(--text-muted)">
-                    We'll use this to sign you in
-                </p>
-                {% endif %}
-                {% if mode == 'register' and field.html_name == 'password1' %}
-                    <div class="mt-3 rounded-xl px-4 py-3 space-y-1.5" style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border)">
+            </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data" class="space-y-5" id="authForm">
+                {% csrf_token %}
+                
+                {% if mode == 'register' %}
+                <!-- Step 1: Username & Email -->
+                <div class="step-content active space-y-4" id="step-1" role="tabpanel" aria-labelledby="tab-step-1">
+                    <div class="text-center mb-6">
+                        <h2 class="text-lg font-bold" style="color:var(--text-primary)">Create your account</h2>
+                        <p class="text-xs mt-1" style="color:var(--text-muted)">Start with your username and email</p>
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.username.id_for_label }}" class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">
+                            Username
+                        </label>
+                        {{ form.username }}
+                        <p class="validation-msg" id="username-error" aria-live="polite"></p>
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.email.id_for_label }}" class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">
+                            Email address
+                        </label>
+                        {{ form.email }}
+                        <p class="text-xs mt-1" style="color:var(--text-muted)">We'll use this to sign you in</p>
+                        <p class="validation-msg" id="email-error" aria-live="polite"></p>
+                    </div>
+
+                    <div class="step-nav">
+                        <button type="button" class="btn-next" data-step="2" aria-label="Next step">
+                            Next →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Password -->
+                <div class="step-content space-y-4" id="step-2" role="tabpanel" aria-labelledby="tab-step-2">
+                    <div class="text-center mb-6">
+                        <h2 class="text-lg font-bold" style="color:var(--text-primary)">Secure your account</h2>
+                        <p class="text-xs mt-1" style="color:var(--text-muted)">Choose a strong password</p>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.password1.id_for_label }}" class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">
+                            Password
+                        </label>
+                        {{ form.password1 }}
+                        <p class="validation-msg" id="password1-error" aria-live="polite"></p>
+                    </div>
+
+                    <div class="rounded-xl px-4 py-3 space-y-1.5" style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border)">
                         <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--tag-green-text)">Password must:</p>
                         <div class="flex items-center gap-2 text-xs" style="color:var(--tag-green-text)">
                             <span class="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"></span> Be at least 8 characters long
@@ -55,29 +369,495 @@
                             <span class="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"></span> Not be a commonly used password
                         </div>
                     </div>
+                    
+                    <div>
+                        <label for="{{ form.password2.id_for_label }}" class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">
+                            Confirm password
+                        </label>
+                        {{ form.password2 }}
+                        <p class="validation-msg" id="password2-error" aria-live="polite"></p>
+                    </div>
+
+                    <div class="step-nav">
+                        <button type="button" class="btn-back" data-step="1" aria-label="Go back to account step">
+                            ← Back
+                        </button>
+                        <button type="button" class="btn-next" data-step="3" aria-label="Next step">
+                            Next →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Security Question -->
+                <div class="step-content space-y-4" id="step-3" role="tabpanel" aria-labelledby="tab-step-3">
+                    <div class="text-center mb-6">
+                        <h2 class="text-lg font-bold" style="color:var(--text-primary)">Security setup</h2>
+                        <p class="text-xs mt-1" style="color:var(--text-muted)">Set up a security question to recover your account</p>
+                    </div>
+
+                    <div class="rounded-xl px-4 py-3 mb-5" style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2)">
+                        <p class="text-xs" style="color:var(--text-muted)">This helps you regain access if you forget your password.</p>
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.security_question.id_for_label }}" class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">
+                            Security question
+                        </label>
+                        {{ form.security_question }}
+                        <p class="validation-msg" id="security_question-error" aria-live="polite"></p>
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.security_answer.id_for_label }}" class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">
+                            Your answer
+                        </label>
+                        {{ form.security_answer }}
+                        <p class="validation-msg" id="security_answer-error" aria-live="polite"></p>
+                    </div>
+
+                    <div class="step-nav">
+                        <button type="button" class="btn-back" data-step="2" aria-label="Go back to password step">
+                            ← Back
+                        </button>
+                        <button type="button" class="btn-next" data-step="4" aria-label="Next step">
+                            Next →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Profile Details -->
+                <div class="step-content space-y-4" id="step-4" role="tabpanel" aria-labelledby="tab-step-4">
+                    <div class="text-center mb-6">
+                        <h2 class="text-lg font-bold" style="color:var(--text-primary)">Complete your profile</h2>
+                        <p class="text-xs mt-1" style="color:var(--text-muted)">Tell us a bit about yourself</p>
+                    </div>
+
+                    <!-- Avatar Upload -->
+                    <div class="mb-5">
+                        <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">
+                            Profile picture
+                        </label>
+                        <div class="avatar-upload-area" id="avatarUploadArea" role="button" tabindex="0" aria-label="Upload profile picture">
+                            <div class="avatar-placeholder" id="avatarPlaceholder">📷</div>
+                            <img class="avatar-preview" id="avatarPreview" alt="Profile picture preview">
+                            <p class="text-sm font-medium" style="color:var(--text-primary)" id="avatarUploadText">Click or drag to upload</p>
+                            <p class="text-xs mt-1" style="color:var(--text-muted)">JPG, PNG, GIF or WebP. Max 5MB.</p>
+                            {{ form.avatar }}
+                        </div>
+                        <p class="validation-msg" id="avatar-error" aria-live="polite"></p>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.display_name.id_for_label }}" class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">
+                            Display name <span class="normal-case text-xs px-1.5 py-0.5 rounded tag-green">optional</span>
+                        </label>
+                        {{ form.display_name }}
+                        <p class="validation-msg" id="display_name-error" aria-live="polite"></p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="{{ form.first_name.id_for_label }}" class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">
+                                First name
+                            </label>
+                            {{ form.first_name }}
+                            <p class="validation-msg" id="first_name-error" aria-live="polite"></p>
+                        </div>
+                        <div>
+                            <label for="{{ form.last_name.id_for_label }}" class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">
+                                Last name
+                            </label>
+                            {{ form.last_name }}
+                            <p class="validation-msg" id="last_name-error" aria-live="polite"></p>
+                        </div>
+                    </div>
+
+                    <div class="step-nav">
+                        <button type="button" class="btn-back" data-step="3" aria-label="Go back to security step">
+                            ← Back
+                        </button>
+                        <button type="submit" class="btn-next" aria-label="Create account">
+                            Create Account →
+                        </button>
+                    </div>
+                </div>
+
+                {% else %}
+                <!-- Login Form (unchanged) -->
+                {% if form.non_field_errors %}
+                <div class="tag-red text-xs px-3 py-2 rounded-lg">
+                    {{ form.non_field_errors.0 }}
+                </div>
+                {% endif %}
+                {% for field in form %}
+                <div>
+                    <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <p class="tag-red text-xs mt-2 px-3 py-2 rounded-lg">{{ field.errors.0 }}</p>
                     {% endif %}
                 </div>
                 {% endfor %}
-                {% if mode == 'register' %}
-                <div class="rounded-xl px-4 py-3" style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2)">
-                    <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:#22c55e">Security Setup</p>
-                    <p class="text-xs mb-3" style="color:var(--text-muted)">Set up a security question to recover your account if you forget your password.</p>
-                </div>
-                {% endif %}
                 <button type="submit" class="w-full py-4 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-lg transition shadow-lg shadow-green-900/20 mt-2">
-                    {% if mode == 'login' %}Login →{% else %}Create Account →{% endif %}
+                    Login →
                 </button>
+                {% endif %}
             </form>
+
+            {% if mode == 'register' %}
             <div class="mt-6 text-center text-sm" style="color:var(--text-muted)">
-                {% if mode == 'login' %}
+                Already have an account? <a href="{% url 'login' %}" class="font-medium hover:opacity-80 transition" style="color:#22c55e">Login</a>
+            </div>
+            {% else %}
+            <div class="mt-6 text-center text-sm" style="color:var(--text-muted)">
                 Don't have an account? <a href="{% url 'register' %}" class="font-medium hover:opacity-80 transition" style="color:#22c55e">Register</a>
                 <br>
                 <a href="{% url 'forgot_password' %}" class="font-medium hover:opacity-80 transition" style="color:#22c55e">Forgot password?</a>
-                {% else %}
-                Already have an account? <a href="{% url 'login' %}" class="font-medium hover:opacity-80 transition" style="color:#22c55e">Login</a>
-                {% endif %}
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<!-- Screen reader live region for step announcements -->
+<div id="step-announcement" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  const TOTAL_STEPS = 4;
+  let currentStep = 1;
+  let formData = {};
+
+  // ── DOM Elements ──────────────────────────────────
+  const form = document.getElementById('authForm');
+  const announcement = document.getElementById('step-announcement');
+
+  // ── Initialize ────────────────────────────────────
+  function init() {
+    // Load saved step from sessionStorage
+    const savedStep = sessionStorage.getItem('reg_current_step');
+    if (savedStep) {
+      currentStep = parseInt(savedStep, 10);
+      showStep(currentStep, false);
+    }
+
+    // Restore form data from sessionStorage
+    const savedData = sessionStorage.getItem('reg_form_data');
+    if (savedData) {
+      try {
+        formData = JSON.parse(savedData);
+        restoreFormData();
+      } catch(e) {}
+    }
+
+    // Setup avatar upload
+    setupAvatarUpload();
+
+    // Setup keyboard navigation
+    setupKeyboardNav();
+  }
+
+  // ── Step Navigation ───────────────────────────────
+  function goToStep(step) {
+    if (step < 1 || step > TOTAL_STEPS) return;
+    
+    // Validate current step before proceeding
+    if (step > currentStep) {
+      if (!validateStep(currentStep)) return;
+    }
+
+    showStep(step, true);
+  }
+
+  // Attach event listeners to navigation buttons
+  document.querySelectorAll('.btn-next[data-step], .btn-back[data-step]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const targetStep = parseInt(this.getAttribute('data-step'), 10);
+      goToStep(targetStep);
+    });
+  });
+
+  function showStep(step, animate) {
+    // Hide all steps
+    document.querySelectorAll('.step-content').forEach(el => {
+      el.classList.remove('active');
+    });
+
+    // Show target step
+    const targetStep = document.getElementById('step-' + step);
+    if (targetStep) {
+      targetStep.classList.add('active');
+      if (animate) {
+        targetStep.style.animation = 'none';
+        targetStep.offsetHeight; // trigger reflow
+        targetStep.style.animation = '';
+      }
+    }
+
+    // Update step indicators
+    for (let i = 1; i <= TOTAL_STEPS; i++) {
+      const circle = document.getElementById('circle-step-' + i);
+      const label = document.getElementById('label-step-' + i);
+      const tab = document.getElementById('tab-step-' + i);
+      
+      circle.classList.remove('active', 'completed');
+      label.classList.remove('active', 'completed');
+      tab.setAttribute('aria-selected', 'false');
+
+      if (i < step) {
+        circle.classList.add('completed');
+        circle.innerHTML = '✓';
+        label.classList.add('completed');
+      } else if (i === step) {
+        circle.classList.add('active');
+        circle.textContent = i;
+        label.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+      } else {
+        circle.textContent = i;
+      }
+    }
+
+    // Update connectors
+    for (let i = 1; i < TOTAL_STEPS; i++) {
+      const connector = document.getElementById('connector-' + i + '-' + (i + 1));
+      if (connector) {
+        if (i < step) {
+          connector.classList.add('completed');
+        } else {
+          connector.classList.remove('completed');
+        }
+      }
+    }
+
+    // Save current step
+    currentStep = step;
+    sessionStorage.setItem('reg_current_step', step);
+
+    // Announce to screen readers
+    const stepNames = ['Account', 'Password', 'Security', 'Profile'];
+    announcement.textContent = 'Step ' + step + ' of ' + TOTAL_STEPS + ': ' + stepNames[step - 1];
+
+    // Focus management
+    const firstInput = targetStep ? targetStep.querySelector('input, select, textarea') : null;
+    if (firstInput) {
+      setTimeout(() => firstInput.focus(), 100);
+    }
+  }
+
+  // ── Validation ────────────────────────────────────
+  function validateStep(step) {
+    let isValid = true;
+
+    if (step === 1) {
+      isValid = validateField('username', 'Username is required', true) && isValid;
+      isValid = validateField('email', 'Please enter a valid email address', true, 'email') && isValid;
+    } else if (step === 2) {
+      isValid = validateField('password1', 'Password is required', true) && isValid;
+      isValid = validateField('password2', 'Please confirm your password', true) && isValid;
+      
+      // Check password match
+      const pw1 = document.getElementById('id_password1')?.value || '';
+      const pw2 = document.getElementById('id_password2')?.value || '';
+      if (pw1 && pw2 && pw1 !== pw2) {
+        showFieldError('password2', 'Passwords do not match');
+        isValid = false;
+      } else if (pw1 && pw2 && pw1 === pw2) {
+        clearFieldError('password2');
+      }
+    } else if (step === 3) {
+      isValid = validateField('security_question', 'Please select a security question', true) && isValid;
+      isValid = validateField('security_answer', 'Please provide a security answer', true) && isValid;
+    } else if (step === 4) {
+      isValid = validateField('first_name', 'First name is required', true) && isValid;
+      isValid = validateField('last_name', 'Last name is required', true) && isValid;
+    }
+
+    return isValid;
+  }
+
+  function validateField(fieldName, errorMsg, required, type) {
+    const field = document.getElementById('id_' + fieldName);
+    if (!field) return true;
+
+    const value = field.value.trim();
+    let valid = true;
+
+    if (required && !value) {
+      showFieldError(fieldName, errorMsg);
+      valid = false;
+    } else if (type === 'email' && value) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) {
+        showFieldError(fieldName, 'Please enter a valid email address');
+        valid = false;
+      } else {
+        clearFieldError(fieldName);
+      }
+    } else if (value) {
+      clearFieldError(fieldName);
+    }
+
+    return valid;
+  }
+
+  function showFieldError(fieldName, msg) {
+    const field = document.getElementById('id_' + fieldName);
+    const errorEl = document.getElementById(fieldName + '-error');
+    if (field) field.classList.add('field-error');
+    if (errorEl) {
+      errorEl.textContent = msg;
+      errorEl.classList.add('error');
+      errorEl.classList.remove('success');
+    }
+  }
+
+  function clearFieldError(fieldName) {
+    const field = document.getElementById('id_' + fieldName);
+    const errorEl = document.getElementById(fieldName + '-error');
+    if (field) field.classList.remove('field-error');
+    if (errorEl) {
+      errorEl.textContent = '';
+      errorEl.classList.remove('error');
+    }
+  }
+
+  // ── Avatar Upload ─────────────────────────────────
+  function setupAvatarUpload() {
+    const uploadArea = document.getElementById('avatarUploadArea');
+    const fileInput = document.getElementById('id_avatar');
+    const preview = document.getElementById('avatarPreview');
+    const placeholder = document.getElementById('avatarPlaceholder');
+    const uploadText = document.getElementById('avatarUploadText');
+
+    if (!uploadArea || !fileInput) return;
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        fileInput.click();
+      }
+    });
+
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleAvatarFile(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        handleAvatarFile(fileInput.files[0]);
+      }
+    });
+  }
+
+  function handleAvatarFile(file) {
+    const preview = document.getElementById('avatarPreview');
+    const placeholder = document.getElementById('avatarPlaceholder');
+    const uploadText = document.getElementById('avatarUploadText');
+    const errorEl = document.getElementById('avatar-error');
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      if (errorEl) {
+        errorEl.textContent = 'Invalid file type. Please upload JPG, PNG, GIF or WebP.';
+        errorEl.classList.add('error');
+      }
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      if (errorEl) {
+        errorEl.textContent = 'File too large. Maximum size is 5MB.';
+        errorEl.classList.add('error');
+      }
+      return;
+    }
+
+    // Clear error
+    if (errorEl) {
+      errorEl.textContent = '';
+      errorEl.classList.remove('error');
+    }
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      preview.src = e.target.result;
+      preview.classList.add('visible');
+      placeholder.classList.add('hidden');
+      uploadText.textContent = file.name;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── Keyboard Navigation ───────────────────────────
+  function setupKeyboardNav() {
+    document.addEventListener('keydown', (e) => {
+      // Enter key on step buttons
+      if (e.key === 'Enter' && e.target.classList.contains('btn-next') && !e.target.type === 'submit') {
+        e.target.click();
+      }
+    });
+  }
+
+  // ── Form Data Persistence ─────────────────────────
+  function saveFormData() {
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+      if (input.name && input.type !== 'file') {
+        formData[input.name] = input.value;
+      }
+    });
+    sessionStorage.setItem('reg_form_data', JSON.stringify(formData));
+  }
+
+  function restoreFormData() {
+    Object.keys(formData).forEach(name => {
+      const input = form.querySelector('[name="' + name + '"]');
+      if (input && input.type !== 'file') {
+        input.value = formData[name];
+      }
+    });
+  }
+
+  // Save data on input change
+  form.addEventListener('input', saveFormData);
+  form.addEventListener('change', saveFormData);
+
+  // ── Form Submit Handler ───────────────────────────
+  const isRegisterMode = document.getElementById('step-1') !== null;
+  form.addEventListener('submit', function(e) {
+    if (isRegisterMode && currentStep < TOTAL_STEPS) {
+      e.preventDefault();
+      goToStep(currentStep + 1);
+    }
+    // If on last step or login mode, allow normal submission
+  });
+
+  // ── Initialize ────────────────────────────────────
+  init();
+})();
+</script>
 {% endblock %}

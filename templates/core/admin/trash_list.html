@@ -99,10 +99,10 @@
                                     <td class="px-5 py-4">
                                         <div class="flex items-center gap-3">
                                             <div class="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                                {% if item.profile.display_name %}{{ item.profile.display_name|first|upper }}{% else %}{{ item.username|first|upper }}{% endif %}
+                                                {{ item.profile.get_display_name|first|upper }}
                                             </div>
                                             <div>
-                                                <p class="font-medium">{{ item.profile.display_name|default:item.username }}</p>
+                                                <p class="font-medium">{{ item.profile.get_display_name }}</p>
                                                 <p class="text-xs" style="color:var(--text-muted)">@{{ item.username }}</p>
                                             </div>
                                         </div>

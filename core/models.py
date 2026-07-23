@@ -1,11 +1,11 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-User = get_user_model()
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password, check_password
 
+User = get_user_model()
 
 class UserProfile(models.Model):
     SECURITY_QUESTIONS = [
@@ -25,7 +25,15 @@ class UserProfile(models.Model):
         return f'Profile of {self.user.username}'
 
     def get_display_name(self):
-        return self.display_name or self.user.username
+        if self.display_name:
+            return self.display_name
+        first_name = getattr(self.user, 'first_name', '').strip()
+        last_name = getattr(self.user, 'last_name', '').strip()
+        if first_name and last_name:
+            return f"{first_name} {last_name}"
+        if first_name:
+            return first_name
+        return self.user.username
 
     def get_avatar_url(self):
         if self.avatar:

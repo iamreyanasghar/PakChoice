@@ -2,7 +2,6 @@ import os
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib.auth import login, logout, update_session_auth_hash, get_user_model
-User = get_user_model()
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
@@ -16,6 +15,7 @@ from .security_logger import log_security_event
 from .models import Category, SubCategory, BoycottProduct, PakistaniAlternative, AlternativeVote, UserProfile
 from .forms import RegisterForm, LoginForm, AlternativeForm, AvatarForm, ProfileSettingsForm, PasswordChangeForm, ModerationForm, ForgotPasswordForm, VerifySecurityForm, ResetPasswordForm, SecuritySettingsForm
 
+User = get_user_model()
 
 def _staff_required(user):
     return user.is_active and user.is_staff
@@ -230,17 +230,32 @@ def search(request):
 def register_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
-    form = RegisterForm(request.POST or None)
+    form = RegisterForm(request.POST or None, request.FILES or None)
     if form.is_valid():
         user = form.save()
+        user.first_name = form.cleaned_data.get('first_name', '')
+        user.last_name = form.cleaned_data.get('last_name', '')
+        user.save()
 
         # Save profile data (signal already created the profile)
         profile = user.profile
         profile.security_question = form.cleaned_data.get('security_question', '')
         profile.set_security_answer(form.cleaned_data.get('security_answer', ''))
         display_name = form.cleaned_data.get('display_name', '').strip()
+        if not display_name:
+            # Auto-generate display name from first + last name
+            first = form.cleaned_data.get('first_name', '').strip()
+            last = form.cleaned_data.get('last_name', '').strip()
+            if first and last:
+                display_name = f"{first} {last}"
+            elif first:
+                display_name = first
         if display_name:
             profile.display_name = display_name
+        # Handle avatar upload
+        avatar = form.cleaned_data.get('avatar')
+        if avatar:
+            profile.avatar = avatar
         profile.save()
 
         # Log the user in and redirect to dashboard
@@ -251,10 +266,18 @@ def register_view(request):
     return render(request, 'core/auth.html', {'form': form, 'mode': 'register'})
 
 
-@rate_limit(key_prefix='login', limit=5, period=300)
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
+
+    # Only rate limit POST requests (actual login attempts)
+    if request.method == 'POST':
+        from django.core.cache import cache
+        ip_address = request.META.get('REMOTE_ADDR', 'unknown')
+        lockout_key = f"login_lockout_{ip_address}"
+        if cache.get(lockout_key):
+            messages.error(request, 'Too many failed login attempts. Please try again later.')
+            return redirect('home')
 
     form = LoginForm(request, request.POST or None)
     if request.method == 'POST' and form.is_valid():

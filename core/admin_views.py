@@ -2,13 +2,14 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-User = get_user_model()
 from django.db.models import Count, Q
 from django.utils import timezone
 from django.core.paginator import Paginator
 from datetime import timedelta
 from .models import Category, SubCategory, BoycottProduct, PakistaniAlternative, UserProfile
 from .admin_forms import CategoryForm, SubCategoryForm, ProductForm, AlternativeModerationForm, UserEditForm, UserProfileEditForm
+
+User = get_user_model()
 
 # Trash model mappings (extracted to avoid repetition)
 TRASH_MODEL_MAP = {
@@ -372,7 +373,10 @@ def admin_user_list(request):
 
     if query:
         users_qs = users_qs.filter(
-            Q(username__icontains=query) | Q(profile__display_name__icontains=query)
+            Q(username__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(profile__display_name__icontains=query)
         )
 
     paginator = Paginator(users_qs, 20)
@@ -493,7 +497,10 @@ def admin_trash_list(request, model_type):
         items_qs = model.objects.filter(is_active=False)
         if query:
             items_qs = items_qs.filter(
-                Q(username__icontains=query) | Q(profile__display_name__icontains=query)
+                Q(username__icontains=query) |
+                Q(first_name__icontains=query) |
+                Q(last_name__icontains=query) |
+                Q(profile__display_name__icontains=query)
             )
     elif model_type == 'alternatives':
         items_qs = model.objects.filter(is_active=False).select_related('product', 'added_by')
