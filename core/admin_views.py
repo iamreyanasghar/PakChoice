@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
@@ -7,7 +8,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from datetime import timedelta
 from .models import Category, SubCategory, BoycottProduct, PakistaniAlternative, UserProfile
-from .admin_forms import CategoryForm, SubCategoryForm, ProductForm, AlternativeModerationForm, UserEditForm, UserProfileEditForm
+from .admin_forms import CategoryForm, SubCategoryForm, ProductForm, AlternativeForm, AlternativeModerationForm, UserEditForm, UserProfileEditForm
 
 User = get_user_model()
 
@@ -342,6 +343,38 @@ def admin_alternative_list(request):
         'alternatives': alternatives,
         'current_status': alt_status,
         'search_query': query,
+    })
+
+
+@user_passes_test(_admin_required, login_url='/login/')
+def admin_alternative_create(request):
+    products = BoycottProduct.objects.filter(is_active=True, verified=True).select_related('subcategory__category').all()
+    if request.method == 'POST':
+        form = AlternativeForm(request.POST)
+        if form.is_valid():
+            alt = form.save(commit=False)
+            # If product was selected via datalist, ensure FK is set
+            product_pk = request.POST.get('product_pk')
+            if product_pk and not alt.product_id:
+                try:
+                    alt.product = BoycottProduct.objects.get(pk=product_pk)
+                except BoycottProduct.DoesNotExist:
+                    pass
+            alt.save()
+            messages.success(request, f'✅ Alternative "{alt.name}" created successfully.')
+            return redirect('admin_alternative_list')
+        else:
+            for error in form.errors.values():
+                messages.error(request, error[0])
+    else:
+        form = AlternativeForm()
+
+    products_data = json.dumps([
+        {'pk': p.pk, 'text': f"{p.name} ({p.brand}) — {p.subcategory.category.name} › {p.subcategory.name}"}
+        for p in products
+    ])
+    return render(request, 'core/admin/alternative_form.html', {
+        'mode': 'create', 'form': form, 'products': products, 'products_data': products_data
     })
 
 

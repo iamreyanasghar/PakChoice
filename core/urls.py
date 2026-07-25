@@ -20,6 +20,7 @@ urlpatterns = [
     path('admin-panel/products/<int:pk>/edit/', admin_views.admin_product_edit, name='admin_product_edit'),
     path('admin-panel/products/<int:pk>/delete/', admin_views.admin_product_delete, name='admin_product_delete'),
     path('admin-panel/alternatives/', admin_views.admin_alternative_list, name='admin_alternative_list'),
+    path('admin-panel/alternatives/create/', admin_views.admin_alternative_create, name='admin_alternative_create'),
     path('admin-panel/alternatives/<int:pk>/delete/', admin_views.admin_alternative_delete, name='admin_alternative_delete'),
     path('admin-panel/users/', admin_views.admin_user_list, name='admin_user_list'),
     path('admin-panel/users/<int:pk>/edit/', admin_views.admin_user_edit, name='admin_user_edit'),

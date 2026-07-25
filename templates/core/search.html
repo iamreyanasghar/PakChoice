@@ -43,6 +43,7 @@
             {% if categories %}<span class="text-xs px-2.5 py-1 rounded-full glass" style="color:var(--text-muted)">{{ categories|length }} categor{{ categories|length|pluralize:"y,ies" }}</span>{% endif %}
             {% if subcategories %}<span class="text-xs px-2.5 py-1 rounded-full glass" style="color:var(--text-muted)">{{ subcategories|length }} subcategor{{ subcategories|length|pluralize:"y,ies" }}</span>{% endif %}
             {% if products %}<span class="text-xs px-2.5 py-1 rounded-full glass" style="color:var(--text-muted)">{{ products|length }} product{{ products|length|pluralize }}</span>{% endif %}
+            {% if alternatives %}<span class="text-xs px-2.5 py-1 rounded-full glass" style="color:var(--text-muted)">{{ alternatives|length }} alternativ{{ alternatives|length|pluralize:"e,es" }}</span>{% endif %}
         </div>
     </div>
 
@@ -72,6 +73,11 @@
         {% if products %}
         <button onclick="showTab('products')" id="tab-products" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition" style="color:var(--text-muted)">
             🚫 Products ({{ products|length }})
+        </button>
+        {% endif %}
+        {% if alternatives %}
+        <button onclick="showTab('alternatives')" id="tab-alternatives" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition" style="color:var(--text-muted)">
+            ✅ Alternatives ({{ alternatives|length }})
         </button>
         {% endif %}
     </div>
@@ -152,6 +158,32 @@
                     </p>
                 </div>
                 <span class="text-xs tag-green px-2.5 py-1 rounded-lg flex-shrink-0">{{ product.alternatives.count }} alt{{ product.alternatives.count|pluralize }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if alternatives %}
+    <div id="section-alternatives" class="result-section mb-8">
+        <h2 class="text-xs uppercase tracking-widest font-semibold mb-3 flex items-center gap-2" style="color:var(--text-muted)">
+            <span class="w-1 h-4 bg-green-500 rounded-full inline-block"></span> Pakistani Alternatives
+        </h2>
+        <div class="space-y-3">
+            {% for alt in alternatives %}
+            <a href="{% url 'product_detail' alt.product.slug %}" class="glass rounded-2xl p-5 flex items-center gap-5 glass-hover transition-all duration-300 card-glow block group">
+                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+                     style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border)">✅</div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                        <h3 class="font-bold group-hover:text-green-500 transition">{{ alt.name }}</h3>
+                        <span class="tag-green text-xs px-2 py-0.5 rounded-full">🇵🇰 Pakistani</span>
+                    </div>
+                    <p class="text-sm truncate" style="color:var(--text-muted)">
+                        {{ alt.brand }} · Alternative to {{ alt.product.name }} · {{ alt.product.subcategory.category.icon }} {{ alt.product.subcategory.category.name }}
+                    </p>
+                </div>
+                <span class="text-xs tag-green px-2.5 py-1 rounded-lg flex-shrink-0">👍 {{ alt.upvotes }}</span>
             </a>
             {% endfor %}
         </div>

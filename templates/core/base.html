@@ -98,7 +98,7 @@
             <!-- Desktop Search -->
             <form action="{% url 'search' %}" method="get" class="hidden md:flex flex-1 max-w-lg relative" id="navbarSearchForm">
                 <div class="relative w-full">
-                    <input type="text" name="q" value="{{ request.GET.q }}"
+                    <input type="text" name="q" value="{% if request.path != '/search/' %}{{ request.GET.q }}{% endif %}"
                         placeholder="Search categories, products, brands..."
                         autocomplete="off"
                         class="form-input pl-10 pr-4 py-2 text-sm w-full"

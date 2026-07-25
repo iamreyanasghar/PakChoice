@@ -48,6 +48,21 @@ class ProductForm(forms.ModelForm):
         }
 
 
+class AlternativeForm(forms.ModelForm):
+    class Meta:
+        model = PakistaniAlternative
+        fields = ['product', 'name', 'brand', 'description', 'image_url', 'website', 'status']
+        widgets = {
+            'product': forms.Select(attrs={'class': 'form-input'}),
+            'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Alternative name'}),
+            'brand': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Brand name'}),
+            'description': forms.Textarea(attrs={'class': 'form-input', 'rows': 3, 'placeholder': 'Description'}),
+            'image_url': forms.URLInput(attrs={'class': 'form-input', 'placeholder': 'https://...'}),
+            'website': forms.URLInput(attrs={'class': 'form-input', 'placeholder': 'https://...'}),
+            'status': forms.Select(attrs={'class': 'form-input'}),
+        }
+
+
 class AlternativeModerationForm(forms.ModelForm):
     class Meta:
         model = PakistaniAlternative

@@ -208,10 +208,11 @@ def search_suggestions(request):
 
 def search(request):
     q = request.GET.get('q', '').strip()
-    products, categories, subcategories = [], [], []
+    products, categories, subcategories, alternatives = [], [], [], []
     product_page = request.GET.get('product_page', 1)
     category_page = request.GET.get('category_page', 1)
     subcategory_page = request.GET.get('subcategory_page', 1)
+    alternative_page = request.GET.get('alternative_page', 1)
 
     if q:
         products_qs = BoycottProduct.objects.filter(
@@ -235,6 +236,14 @@ def search(request):
         subcategories_paginator = Paginator(subcategories_qs, 10)
         subcategories = subcategories_paginator.get_page(subcategory_page)
 
+        alternatives_qs = PakistaniAlternative.objects.filter(
+            Q(name__icontains=q) | Q(brand__icontains=q) | Q(description__icontains=q),
+            status='approved',
+            is_active=True
+        ).select_related('product__subcategory__category')
+        alternatives_paginator = Paginator(alternatives_qs, 10)
+        alternatives = alternatives_paginator.get_page(alternative_page)
+
     # Dynamic suggestions from popular categories and products
     suggestions = list(Category.objects.filter(is_active=True).order_by('order')[:6].values_list('name', flat=True))
     popular_products = list(BoycottProduct.objects.filter(verified=True, is_active=True).order_by('name')[:4].values_list('name', flat=True))
@@ -247,11 +256,14 @@ def search(request):
         total += categories.paginator.count
     if subcategories:
         total += subcategories.paginator.count
+    if alternatives:
+        total += alternatives.paginator.count
 
     return render(request, 'core/search.html', {
         'products': products,
         'categories': categories,
         'subcategories': subcategories,
+        'alternatives': alternatives,
         'query': q,
         'total': total,
         'suggestions': suggestions[:10],
