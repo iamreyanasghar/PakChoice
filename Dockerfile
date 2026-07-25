@@ -1,5 +1,5 @@
 # ============================================
-# Dockerfile for boycott_pk Django Application
+# Dockerfile for buypakistani Django Application
 # ============================================
 
 # Base image with Python
@@ -60,4 +60,4 @@ CMD ["gunicorn", \
      "--bind", "0.0.0.0:8000", \
      "--access-logfile", "-", \
      "--error-logfile", "-", \
-     "boycott_pk.wsgi:application"]
+     "buypakistani.wsgi:application"]

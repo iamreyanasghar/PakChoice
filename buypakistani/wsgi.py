@@ -1,5 +1,5 @@
 """
-WSGI config for boycott_pk project.
+WSGI config for buypakistani project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'boycott_pk.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'buypakistani.settings')
 
 application = get_wsgi_application()

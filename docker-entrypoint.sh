@@ -9,7 +9,7 @@
 set -e  # Exit immediately if any command fails
 
 echo "=========================================="
-echo "🚀 Starting boycott_pk container..."
+echo "🚀 Starting buypakistani container..."
 echo "=========================================="
 
 # Wait for database to be ready

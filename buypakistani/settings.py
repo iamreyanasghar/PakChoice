@@ -1,5 +1,5 @@
 """
-Django settings for boycott_pk project.
+Django settings for buypakistani project.
 """
 
 from pathlib import Path
@@ -45,7 +45,7 @@ MIDDLEWARE = [
     'core.middleware.SecurityHeadersMiddleware',
 ]
 
-ROOT_URLCONF = 'boycott_pk.urls'
+ROOT_URLCONF = 'buypakistani.urls'
 
 TEMPLATES = [
     {
@@ -63,7 +63,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'boycott_pk.wsgi.application'
+WSGI_APPLICATION = 'buypakistani.wsgi.application'
 
 # Database
 DATABASES = {

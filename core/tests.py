@@ -1,5 +1,5 @@
 """
-Test suite for the PakChoice application.
+Test suite for the BuyPakistani application.
 Covers models, views, forms, and core functionality.
 """
 from django.test import TestCase, Client, override_settings
@@ -310,6 +310,33 @@ class SearchViewTests(TestCase):
         suggestions = response.context['suggestions']
         self.assertIsInstance(suggestions, list)
         self.assertLessEqual(len(suggestions), 10)
+
+    def test_search_suggestions_api(self):
+        """Test the search suggestions autocomplete API endpoint."""
+        url = reverse('search_suggestions')
+        # Empty query returns empty suggestions
+        response = self.client.get(url, {'q': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['suggestions'], [])
+
+        # Query with no matches returns empty suggestions
+        response = self.client.get(url, {'q': 'xyznonexistent123'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['suggestions'], [])
+
+        # Query matching a category returns suggestions
+        response = self.client.get(url, {'q': 'Food'})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIsInstance(data['suggestions'], list)
+
+    def test_search_suggestions_case_insensitive(self):
+        """Test that search suggestions are case-insensitive."""
+        url = reverse('search_suggestions')
+        # Both uppercase and lowercase should return the same results
+        response_upper = self.client.get(url, {'q': 'FOOD'})
+        response_lower = self.client.get(url, {'q': 'food'})
+        self.assertEqual(response_upper.json()['suggestions'], response_lower.json()['suggestions'])
 
 
 class AuthViewTests(TestCase):

@@ -1,17 +1,30 @@
 {% extends 'core/base.html' %}
-{% block title %}Search — PakChoice{% endblock %}
+{% block title %}Search — BuyPakistani{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <h1 class="text-3xl font-black mb-1">Search</h1>
     <p class="text-sm mb-8" style="color:var(--text-muted)">Search across categories, subcategories, and boycott products</p>
 
-    <form action="{% url 'search' %}" method="get" class="mb-10">
-        <div class="flex gap-3">
-            <input type="text" name="q" id="searchInput" value="{{ query }}"
-                placeholder="e.g. food, beverages, cola, nike, pampers..."
-                autofocus
-                class="form-input py-3 text-base flex-1 rounded-xl">
+    <form action="{% url 'search' %}" method="get" class="mb-10 relative" id="searchForm">
+        <div class="flex gap-3 relative">
+            <div class="relative flex-1">
+                <input type="text" name="q" id="searchInput" value="{{ query }}"
+                    placeholder="Search categories, products, brands..."
+                    autofocus
+                    autocomplete="off"
+                    class="form-input py-3 text-base flex-1 rounded-xl pr-10">
+                <div id="searchSpinner" class="absolute right-3 top-1/2 -translate-y-1/2 hidden">
+                    <svg class="w-5 h-5 animate-spin" style="color:var(--text-muted)" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+                <!-- Autocomplete dropdown -->
+                <div id="autocompleteDropdown" class="hidden absolute z-50 mt-1 w-full rounded-2xl glass shadow-2xl overflow-hidden autocomplete-dropdown">
+                    <div id="autocompleteList" class="py-2"></div>
+                </div>
+            </div>
             {% if query %}
             <a href="{% url 'search' %}" class="flex items-center px-4 rounded-xl glass glass-hover transition text-sm font-medium" style="color:var(--text-muted)" title="Clear">✕</a>
             {% endif %}
@@ -35,9 +48,9 @@
 
     {% if total == 0 %}
     <div class="text-center py-20 glass rounded-2xl">
-        <div class="text-6xl mb-4">😔</div>
-        <p class="font-semibold text-lg">No results found</p>
-        <p class="text-sm mt-2" style="color:var(--text-muted)">Try "food", "nike", "cola", or "snacks"</p>
+        <div class="text-6xl mb-4">🔍</div>
+        <p class="font-semibold text-lg">No results found for "{{ query }}"</p>
+        <p class="text-sm mt-2" style="color:var(--text-muted)">Try different keywords or browse categories below</p>
     </div>
     {% else %}
 
@@ -163,19 +176,105 @@
 
 {% block extra_js %}
 <script>
-function showTab(tab) {
-    document.querySelectorAll('.tab-btn').forEach(t => {
-        t.classList.remove('bg-green-600', 'text-white');
-        t.style.color = 'var(--text-muted)';
-    });
-    const active = document.getElementById('tab-' + tab);
-    active.classList.add('bg-green-600', 'text-white');
-    active.style.color = '';
+(function() {
+    const searchInput = document.getElementById('searchInput');
+    const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+    const autocompleteList = document.getElementById('autocompleteList');
+    const searchSpinner = document.getElementById('searchSpinner');
+    const searchForm = document.getElementById('searchForm');
 
-    ['categories','subcategories','products'].forEach(s => {
-        const el = document.getElementById('section-' + s);
-        if (el) el.style.display = (tab === 'all' || tab === s) ? 'block' : 'none';
+    if (!searchInput) return;
+
+    let debounceTimer = null;
+    let currentRequest = null;
+
+    function showSuggestions(suggestions) {
+        if (!suggestions || suggestions.length === 0) {
+            hideAutocomplete();
+            return;
+        }
+
+        const q = searchInput.value.trim();
+        autocompleteList.innerHTML = suggestions.map((s, i) => {
+            const icon = i === 0 ? '🔍' : '📁';
+            const highlighted = q ? s.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'), '<strong style="color:#22c55e">$1</strong>') : s;
+            return `<a href="${searchForm ? searchForm.action : '/search/'}?q=${encodeURIComponent(s)}" class="flex items-center gap-3 px-4 py-3 text-sm transition hover:bg-white/5" style="color:var(--text-primary)">
+                <span class="text-lg">${icon}</span>
+                <span>${highlighted}</span>
+            </a>`;
+        }).join('');
+
+        autocompleteDropdown.classList.remove('hidden');
+    }
+
+    function hideAutocomplete() {
+        autocompleteDropdown.classList.add('hidden');
+    }
+
+    function showLoading() {
+        searchSpinner.classList.remove('hidden');
+    }
+
+    function hideLoading() {
+        searchSpinner.classList.add('hidden');
+    }
+
+    function fetchSuggestions(query) {
+        if (currentRequest) {
+            currentRequest.abort();
+        }
+
+        if (!query || query.length < 1) {
+            hideAutocomplete();
+            return;
+        }
+
+        showLoading();
+        currentRequest = new XMLHttpRequest();
+        currentRequest.open('GET', '{% url "search_suggestions" %}?q=' + encodeURIComponent(query), true);
+        currentRequest.onload = function() {
+            hideLoading();
+            if (this.status === 200) {
+                try {
+                    const data = JSON.parse(this.responseText);
+                    showSuggestions(data.suggestions);
+                } catch(e) {
+                    hideAutocomplete();
+                }
+            }
+        };
+        currentRequest.onerror = function() {
+            hideLoading();
+            hideAutocomplete();
+        };
+        currentRequest.send();
+    }
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        clearTimeout(debounceTimer);
+
+        if (query.length < 1) {
+            hideAutocomplete();
+            return;
+        }
+
+        debounceTimer = setTimeout(function() {
+            fetchSuggestions(query);
+        }, 200);
     });
-}
+
+    document.addEventListener('click', function(e) {
+        if (searchForm && !searchForm.contains(e.target)) {
+            hideAutocomplete();
+        }
+    });
+
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            hideAutocomplete();
+        }
+    });
+})();
 </script>
 {% endblock %}

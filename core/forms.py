@@ -8,12 +8,12 @@ from .models import PakistaniAlternative, UserProfile
 class RegisterForm(UserCreationForm):
     first_name = forms.CharField(
         max_length=150,
-        required=True,
+        required=False,
         widget=forms.TextInput(attrs={'placeholder': 'First name'})
     )
     last_name = forms.CharField(
         max_length=150,
-        required=True,
+        required=False,
         widget=forms.TextInput(attrs={'placeholder': 'Last name'})
     )
     email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'placeholder': 'your@email.com'}))
@@ -149,6 +149,16 @@ class AvatarForm(forms.ModelForm):
 
 class ProfileSettingsForm(forms.ModelForm):
     email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'placeholder': 'your@email.com'}))
+    first_name = forms.CharField(
+        max_length=150,
+        required=False,
+        widget=forms.TextInput(attrs={'placeholder': 'First name'})
+    )
+    last_name = forms.CharField(
+        max_length=150,
+        required=False,
+        widget=forms.TextInput(attrs={'placeholder': 'Last name'})
+    )
 
     class Meta:
         model = UserProfile
@@ -159,12 +169,16 @@ class ProfileSettingsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.user = user
         self.fields['email'].initial = user.email
+        self.fields['first_name'].initial = user.first_name
+        self.fields['last_name'].initial = user.last_name
         for field in self.fields.values():
             field.widget.attrs['class'] = 'form-input'
 
     def save(self, commit=True):
         profile = super().save(commit=False)
         self.user.email = self.cleaned_data['email']
+        self.user.first_name = self.cleaned_data.get('first_name', '')
+        self.user.last_name = self.cleaned_data.get('last_name', '')
         if commit:
             self.user.save()
             profile.save()

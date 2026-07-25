@@ -1,5 +1,5 @@
 {% extends 'core/base.html' %}
-{% block title %}{% if mode == 'login' %}Login{% else %}Register{% endif %} — PakChoice{% endblock %}
+{% block title %}{% if mode == 'login' %}Login{% else %}Register{% endif %} — BuyPakistani{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -164,7 +164,8 @@
 }
 
 .step-nav .btn-back,
-.step-nav .btn-next {
+.step-nav .btn-next,
+.step-nav .btn-skip {
   flex: 1;
   padding: 0.875rem 1.5rem;
   border-radius: 0.75rem;
@@ -205,6 +206,19 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+.step-nav .btn-skip {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.step-nav .btn-skip:hover {
+  border-color: #22c55e;
+  color: #22c55e;
+  background: rgba(34,197,94,0.06);
 }
 
 /* ── Validation States ─────────────────────────────── */
@@ -269,7 +283,7 @@
         <div class="text-center mb-8">
             <span class="text-5xl block mb-4">🇵🇰</span>
             <h1 class="text-3xl font-black gradient-text">
-                {% if mode == 'login' %}Welcome Back{% else %}Join PakChoice{% endif %}
+                {% if mode == 'login' %}Welcome Back{% else %}Join BuyPakistani{% endif %}
             </h1>
             <p class="mt-2 text-sm" style="color:var(--text-muted)">
                 {% if mode == 'login' %}Login to suggest Pakistani alternatives{% else %}Create your account in 4 easy steps{% endif %}
@@ -476,6 +490,9 @@
                         <button type="button" class="btn-back" data-step="3" aria-label="Go back to security step">
                             ← Back
                         </button>
+                        <button type="button" class="btn-skip" id="skipProfileBtn" aria-label="Skip profile setup">
+                            Skip →
+                        </button>
                         <button type="submit" class="btn-next" aria-label="Create account">
                             Create Account →
                         </button>
@@ -581,6 +598,23 @@
     });
   });
 
+  // Skip profile step button
+  const skipProfileBtn = document.getElementById('skipProfileBtn');
+  if (skipProfileBtn) {
+    skipProfileBtn.addEventListener('click', function() {
+      // Submit the form with empty profile fields to skip the profile step
+      const form = this.closest('form');
+      if (form) {
+        // Clear any profile field values
+        ['id_first_name', 'id_last_name', 'id_display_name', 'id_avatar'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
+        form.submit();
+      }
+    });
+  }
+
   function showStep(step, animate) {
     // Hide all steps
     document.querySelectorAll('.step-content').forEach(el => {
@@ -673,8 +707,7 @@
       isValid = validateField('security_question', 'Please select a security question', true) && isValid;
       isValid = validateField('security_answer', 'Please provide a security answer', true) && isValid;
     } else if (step === 4) {
-      isValid = validateField('first_name', 'First name is required', true) && isValid;
-      isValid = validateField('last_name', 'Last name is required', true) && isValid;
+      // Profile step is optional - no required fields
     }
 
     return isValid;

@@ -31,7 +31,7 @@ from .management.commands.purge_trash import purge_trash
 INTERVAL_SECONDS = 24 * 60 * 60
 
 # Lock file used to guarantee a single scheduler across processes.
-_LOCK_PATH = os.path.join('/tmp', 'boycott_pk_purge_scheduler.lock')
+_LOCK_PATH = os.path.join('/tmp', 'buypakistani_purge_scheduler.lock')
 
 # In-process guard: ensures only ONE scheduler thread per Python process
 # (the file lock alone does not cover multiple threads in the same process,

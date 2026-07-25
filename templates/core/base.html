@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="PakChoice - Discover Pakistani alternatives to boycott products. Support local Pakistani businesses and find local replacements for international brands. 🇵🇰">
-    <meta name="theme-color" content="#0a0a0a">
+    <meta name="description" content="BuyPakistani - Discover Pakistani alternatives to boycott products. Support local Pakistani businesses and find local replacements for international brands. 🇵🇰">
+    <meta name="theme-color" content="#0a0a0a" id="theme-color-meta">
     <link rel="manifest" href="{% static 'manifest.json' %}">
-    <title>{% block title %}PakChoice — Boycott the Oppressors. Buy Pakistani. 🇵🇰{% endblock %}</title>
+    <title>{% block title %}Buy Pakistani — Boycott the Oppressors. Buy Pakistani. 🇵🇰{% endblock %}</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
@@ -21,13 +21,13 @@
     {% endif %}
 
     <!-- Open Graph / Social Sharing -->
-    <meta property="og:title" content="{% block og_title %}PakChoice — Boycott the Oppressors. Buy Pakistani.{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}BuyPakistani — Boycott the Oppressors. Buy Pakistani.{% endblock %}">
     <meta property="og:description" content="{% block og_description %}Discover Pakistani alternatives to boycott products. Support local Pakistani businesses and find local replacements for international brands.{% endblock %}">
     <meta property="og:image" content="{% block og_image %}{% static 'img/logo.png' %}{% endblock %}">
     <meta property="og:url" content="{{ request.build_absolute_uri }}">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="PakChoice — Boycott the Oppressors. Buy Pakistani.">
+    <meta name="twitter:title" content="BuyPakistani — Boycott the Oppressors. Buy Pakistani.">
     <meta name="twitter:description" content="Discover Pakistani alternatives to boycott products. Support local Pakistani businesses and find local replacements for international brands.">
     <meta name="twitter:image" content="{% static 'img/logo.png' %}">
 
@@ -36,7 +36,7 @@
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      "name": "PakChoice",
+      "name": "BuyPakistani",
       "description": "Discover Pakistani alternatives to boycott products. Support local Pakistani businesses and find local replacements for international brands.",
       "url": "{{ request.build_absolute_uri|slice:':-1' }}",
       "potentialAction": {
@@ -72,7 +72,11 @@
     <script>
       (function(){
         var t = localStorage.getItem('bpk-theme');
-        if(t === 'light') document.documentElement.classList.add('light');
+        if(t === 'light') {
+          document.documentElement.classList.add('light');
+          var meta = document.getElementById('theme-color-meta');
+          if(meta) meta.setAttribute('content', '#f8fafc');
+        }
       })();
     </script>
 
@@ -87,19 +91,31 @@
 
             <!-- Logo -->
             <a href="{% url 'home' %}" class="flex items-center gap-2.5 flex-shrink-0 group">
-                <img src="{% static 'img/logo.png' %}" alt="PakChoice" class="h-9 w-9 rounded-xl object-contain" width="36" height="36">
-                <span class="font-black text-xl gradient-text tracking-tight">PakChoice</span>
+                <img src="{% static 'img/logo.png' %}" alt="BuyPakistani" class="h-9 w-9 rounded-xl object-contain" width="36" height="36">
+                <span class="font-black text-xl gradient-text tracking-tight">BuyPakistani</span>
             </a>
 
             <!-- Desktop Search -->
-            <form action="{% url 'search' %}" method="get" class="hidden md:flex flex-1 max-w-lg">
+            <form action="{% url 'search' %}" method="get" class="hidden md:flex flex-1 max-w-lg relative" id="navbarSearchForm">
                 <div class="relative w-full">
                     <input type="text" name="q" value="{{ request.GET.q }}"
                         placeholder="Search categories, products, brands..."
-                        class="form-input pl-10 pr-4 py-2 text-sm w-full">
+                        autocomplete="off"
+                        class="form-input pl-10 pr-4 py-2 text-sm w-full"
+                        id="navbarSearchInput">
                     <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
+                    <div id="navbarSearchSpinner" class="absolute right-3 top-1/2 -translate-y-1/2 hidden">
+                        <svg class="w-4 h-4 animate-spin" style="color:var(--text-muted)" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                    <!-- Autocomplete dropdown -->
+                    <div id="navbarAutocomplete" class="hidden absolute z-50 mt-1 w-full rounded-2xl glass shadow-2xl overflow-hidden autocomplete-dropdown">
+                        <div id="navbarAutocompleteList" class="py-2"></div>
+                    </div>
                 </div>
             </form>
 
@@ -192,14 +208,26 @@
 
         <!-- Mobile search bar -->
         <div id="mobileSearchBar" class="hidden pb-3 md:hidden">
-            <form action="{% url 'search' %}" method="get">
+            <form action="{% url 'search' %}" method="get" class="relative" id="mobileSearchForm">
                 <div class="relative">
                     <input type="text" name="q" value="{{ request.GET.q }}"
                         placeholder="Search categories, products, brands..."
-                        class="form-input pl-10 pr-4 py-2.5 text-sm w-full">
+                        autocomplete="off"
+                        class="form-input pl-10 pr-4 py-2.5 text-sm w-full"
+                        id="mobileSearchInput">
                     <svg class="absolute left-3 top-3 w-4 h-4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
+                    <div id="mobileSearchSpinner" class="absolute right-3 top-1/2 -translate-y-1/2 hidden">
+                        <svg class="w-4 h-4 animate-spin" style="color:var(--text-muted)" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                    <!-- Autocomplete dropdown -->
+                    <div id="mobileAutocomplete" class="hidden absolute z-50 mt-1 w-full rounded-2xl glass shadow-2xl overflow-hidden autocomplete-dropdown">
+                        <div id="mobileAutocompleteList" class="py-2"></div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -230,9 +258,9 @@
     <div class="max-w-7xl mx-auto px-4 py-10">
         <div class="flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="flex items-center gap-3">
-                <img src="{% static 'img/logo.png' %}" alt="PakChoice logo" class="h-8 w-8 rounded-lg object-contain" width="32" height="32">
+                <img src="{% static 'img/logo.png' %}" alt="BuyPakistani logo" class="h-8 w-8 rounded-lg object-contain" width="32" height="32">
                 <div>
-                    <p class="font-bold gradient-text">PakChoice</p>
+                    <p class="font-bold gradient-text">BuyPakistani</p>
                     <p class="text-xs" style="color:var(--text-muted)">Boycott the Oppressors. Buy Pakistani. 🇵🇰</p>
                 </div>
             </div>

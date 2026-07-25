@@ -37,6 +37,7 @@ urlpatterns = [
     # Public
     path('', views.home, name='home'),
     path('search/', views.search, name='search'),
+    path('search/suggestions/', views.search_suggestions, name='search_suggestions'),
     path('register/', views.register_view, name='register'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),

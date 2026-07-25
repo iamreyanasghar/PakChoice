@@ -1,4 +1,4 @@
-/* BycottPK — main.js */
+/* BuyPakistani — main.js */
 
 // ── Theme ──────────────────────────────────────────────
 const html = document.documentElement;
@@ -12,6 +12,9 @@ function applyTheme(theme) {
   }
   const btn = document.getElementById('themeToggle');
   if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
+  // Update theme-color meta tag for mobile browser UI
+  const meta = document.getElementById('theme-color-meta');
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#f8fafc' : '#0a0a0a');
 }
 
 function toggleTheme() {
@@ -56,4 +59,112 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // ── Autocomplete for all search inputs ────────────────
+  initAutocomplete('navbarSearchInput', 'navbarAutocomplete', 'navbarAutocompleteList', 'navbarSearchSpinner', 'navbarSearchForm');
+  initAutocomplete('mobileSearchInput', 'mobileAutocomplete', 'mobileAutocompleteList', 'mobileSearchSpinner', 'mobileSearchForm');
+  initAutocomplete('searchInput', 'autocompleteDropdown', 'autocompleteList', 'searchSpinner', 'searchForm');
 });
+
+function initAutocomplete(inputId, dropdownId, listId, spinnerId, formId) {
+  const input = document.getElementById(inputId);
+  const dropdown = document.getElementById(dropdownId);
+  const list = document.getElementById(listId);
+  const spinner = document.getElementById(spinnerId);
+  const form = document.getElementById(formId);
+
+  if (!input) return;
+
+  let debounceTimer = null;
+  let currentRequest = null;
+
+  function showSuggestions(suggestions) {
+    if (!suggestions || suggestions.length === 0) {
+      hideAutocomplete();
+      return;
+    }
+
+    const q = input.value.trim();
+    list.innerHTML = suggestions.map((s, i) => {
+      const icon = i === 0 ? '🔍' : '📁';
+      const highlighted = q ? s.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'), '<strong style="color:#22c55e">$1</strong>') : s;
+      return `<a href="${form ? form.action : '/search/'}?q=${encodeURIComponent(s)}" class="flex items-center gap-3 px-4 py-3 text-sm transition hover:bg-white/5" style="color:var(--text-primary)">
+        <span class="text-lg">${icon}</span>
+        <span>${highlighted}</span>
+      </a>`;
+    }).join('');
+
+    dropdown.classList.remove('hidden');
+  }
+
+  function hideAutocomplete() {
+    if (dropdown) dropdown.classList.add('hidden');
+  }
+
+  function showLoading() {
+    if (spinner) spinner.classList.remove('hidden');
+  }
+
+  function hideLoading() {
+    if (spinner) spinner.classList.add('hidden');
+  }
+
+  function fetchSuggestions(query) {
+    if (currentRequest) {
+      currentRequest.abort();
+    }
+
+    if (!query || query.length < 1) {
+      hideAutocomplete();
+      return;
+    }
+
+    showLoading();
+    currentRequest = new XMLHttpRequest();
+    currentRequest.open('GET', '/search/suggestions/?q=' + encodeURIComponent(query), true);
+    currentRequest.onload = function() {
+      hideLoading();
+      if (this.status === 200) {
+        try {
+          const data = JSON.parse(this.responseText);
+          showSuggestions(data.suggestions);
+        } catch(e) {
+          hideAutocomplete();
+        }
+      }
+    };
+    currentRequest.onerror = function() {
+      hideLoading();
+      hideAutocomplete();
+    };
+    currentRequest.send();
+  }
+
+  input.addEventListener('input', function() {
+    const query = this.value.trim();
+    clearTimeout(debounceTimer);
+
+    if (query.length < 1) {
+      hideAutocomplete();
+      return;
+    }
+
+    debounceTimer = setTimeout(function() {
+      fetchSuggestions(query);
+    }, 200);
+  });
+
+  // Hide autocomplete when clicking outside
+  document.addEventListener('click', function(e) {
+    if (form && !form.contains(e.target)) {
+      hideAutocomplete();
+    }
+  });
+
+  // Hide autocomplete on Escape key
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      hideAutocomplete();
+    }
+  });
+}

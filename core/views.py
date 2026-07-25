@@ -175,6 +175,37 @@ def upvote_alternative(request, pk):
 from django.core.paginator import Paginator
 
 
+def search_suggestions(request):
+    """Return autocomplete suggestions for the search bar."""
+    q = request.GET.get('q', '').strip()
+    if not q or len(q) < 1:
+        return JsonResponse({'suggestions': []})
+
+    suggestions = set()
+
+    # Match category names
+    for name in Category.objects.filter(is_active=True, name__icontains=q).values_list('name', flat=True):
+        suggestions.add(name)
+
+    # Match subcategory names
+    for name in SubCategory.objects.filter(is_active=True, name__icontains=q).values_list('name', flat=True):
+        suggestions.add(name)
+
+    # Match product names and brands
+    for name in BoycottProduct.objects.filter(is_active=True, verified=True).filter(
+        Q(name__icontains=q) | Q(brand__icontains=q)
+    ).values_list('name', flat=True):
+        suggestions.add(name)
+
+    # Match Pakistani alternative names
+    for name in PakistaniAlternative.objects.filter(is_active=True, status='approved').filter(
+        Q(name__icontains=q) | Q(brand__icontains=q)
+    ).values_list('name', flat=True):
+        suggestions.add(name)
+
+    return JsonResponse({'suggestions': sorted(suggestions)[:8]})
+
+
 def search(request):
     q = request.GET.get('q', '').strip()
     products, categories, subcategories = [], [], []
@@ -260,7 +291,7 @@ def register_view(request):
 
         # Log the user in and redirect to dashboard
         login(request, user)
-        messages.success(request, '✅ Account created successfully! Welcome to PakChoice.')
+        messages.success(request, '✅ Account created successfully! Welcome to BuyPakistani.')
         return redirect('dashboard')
 
     return render(request, 'core/auth.html', {'form': form, 'mode': 'register'})

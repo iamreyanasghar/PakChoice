@@ -1,7 +1,7 @@
 
 {
-  "name": "PakChoice",
-  "short_name": "PakChoice",
+  "name": "BuyPakistani",
+  "short_name": "BuyPakistani",
   "description": "Discover Pakistani alternatives to boycott products. Support local Pakistani businesses.",
   "start_url": "/",
   "display": "standalone",

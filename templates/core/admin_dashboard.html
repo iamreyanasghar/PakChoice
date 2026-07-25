@@ -1,8 +1,14 @@
 {% extends 'core/base.html' %}
-{% block title %}Moderation Dashboard — PakChoice{% endblock %}
+{% block title %}Moderation Dashboard — BuyPakistani{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+        <!-- Admin Sidebar -->
+        {% include 'core/admin/_nav.html' with active='moderation' %}
+        
+        <!-- Main Content -->
+        <div class="flex-1 min-w-0">
 
     <div class="mb-8">
         <h1 class="text-3xl font-black">🛡️ Moderation Dashboard</h1>
@@ -67,5 +73,7 @@
         <p class="font-medium" style="color:var(--text-secondary)">All caught up! No pending submissions.</p>
     </div>
     {% endif %}
+        </div>
+    </div>
 </div>
 {% endblock %}

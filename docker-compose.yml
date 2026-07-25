@@ -1,5 +1,5 @@
 # ============================================
-# Docker Compose for boycott_pk
+# Docker Compose for buypakistani
 # ============================================
 # This file defines and runs multi-container Docker applications.
 # It will start:
@@ -13,14 +13,14 @@ services:
   # ----------------------------------------
   db:
     image: mysql:8.0
-    container_name: boycott_pk_db
+    container_name: buypakistani_db
     restart: unless-stopped
     environment:
       # Use values from your .env file, with fallback defaults
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
-      MYSQL_DATABASE: ${DB_NAME:-boycott_pk}
-      MYSQL_USER: ${DB_USER:-boycott_pk}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-boycott_pk_password}
+      MYSQL_DATABASE: ${DB_NAME:-buypakistani}
+      MYSQL_USER: ${DB_USER:-buypakistani}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-buypakistani_password}
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
@@ -31,14 +31,14 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - boycott_pk_network
+      - buypakistani_network
 
   # ----------------------------------------
   # Django Web Application
   # ----------------------------------------
   web:
     build: .
-    container_name: boycott_pk_web
+    container_name: buypakistani_web
     restart: unless-stopped
     depends_on:
       db:
@@ -53,9 +53,9 @@ services:
       # Database Settings
       # DB_HOST is overridden to 'db' (the Docker service name)
       DB_ENGINE: ${DB_ENGINE:-django.db.backends.mysql}
-      DB_NAME: ${DB_NAME:-boycott_pk}
-      DB_USER: ${DB_USER:-boycott_pk}
-      DB_PASSWORD: ${DB_PASSWORD:-boycott_pk_password}
+      DB_NAME: ${DB_NAME:-buypakistani}
+      DB_USER: ${DB_USER:-buypakistani}
+      DB_PASSWORD: ${DB_PASSWORD:-buypakistani_password}
       DB_HOST: db
       DB_PORT: ${DB_PORT:-3306}
     volumes:
@@ -64,7 +64,7 @@ services:
     ports:
       - "8000:8000"
     networks:
-      - boycott_pk_network
+      - buypakistani_network
 
 # ----------------------------------------
 # Volumes (persistent data storage)
@@ -81,5 +81,5 @@ volumes:
 # Networks
 # ----------------------------------------
 networks:
-  boycott_pk_network:
+  buypakistani_network:
     driver: bridge

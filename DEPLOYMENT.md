@@ -1,6 +1,6 @@
-# 🚀 Deployment Guide — PakChoice
+# 🚀 Deployment Guide — BuyPakistani
 
-This guide covers deploying the PakChoice application to a production Linux server (Ubuntu/Debian).
+This guide covers deploying the BuyPakistani application to a production Linux server (Ubuntu/Debian).
 
 ---
 
@@ -40,9 +40,9 @@ sudo mysql -u root -p
 ```
 
 ```sql
-CREATE DATABASE boycott_pk CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'boycott_pk'@'localhost' IDENTIFIED BY 'your_secure_password';
-GRANT ALL PRIVILEGES ON boycott_pk.* TO 'boycott_pk'@'localhost';
+CREATE DATABASE buypakistani CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'buypakistani'@'localhost' IDENTIFIED BY 'your_secure_password';
+GRANT ALL PRIVILEGES ON buypakistani.* TO 'buypakistani'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
@@ -54,8 +54,8 @@ EXIT;
 ```bash
 # Clone repository
 cd /var/www
-sudo git clone https://github.com/yourusername/pakistan-boycott-alternatives.git boycott_pk
-cd boycott_pk
+sudo git clone https://github.com/yourusername/pakistan-boycott-alternatives.git buypakistani
+cd buypakistani
 
 # Create virtual environment
 sudo python3 -m venv venv
@@ -79,8 +79,8 @@ ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com,127.0.0.1
 
 # Database (MySQL example)
 DB_ENGINE=django.db.backends.mysql
-DB_NAME=boycott_pk
-DB_USER=boycott_pk
+DB_NAME=buypakistani
+DB_USER=buypakistani
 DB_PASSWORD=your_secure_password
 DB_HOST=localhost
 DB_PORT=3306
@@ -126,21 +126,21 @@ sudo nano /etc/systemd/system/gunicorn.service
 
 ```ini
 [Unit]
-Description=Gunicorn daemon for PakChoice
+Description=Gunicorn daemon for BuyPakistani
 After=network.target
 
 [Service]
 User=www-data
 Group=www-data
-WorkingDirectory=/var/www/boycott_pk
-Environment="PATH=/var/www/boycott_pk/venv/bin"
-EnvironmentFile=/var/www/boycott_pk/.env
-ExecStart=/var/www/boycott_pk/venv/bin/gunicorn \
+WorkingDirectory=/var/www/buypakistani
+Environment="PATH=/var/www/buypakistani/venv/bin"
+EnvironmentFile=/var/www/buypakistani/.env
+ExecStart=/var/www/buypakistani/venv/bin/gunicorn \
     --workers 3 \
     --bind unix:/run/gunicorn.sock \
     --access-logfile /var/log/gunicorn-access.log \
     --error-logfile /var/log/gunicorn-error.log \
-    boycott_pk.wsgi:application
+    buypakistani.wsgi:application
 
 [Install]
 WantedBy=multi-user.target
@@ -164,7 +164,7 @@ sudo systemctl status gunicorn
 Create Nginx site configuration:
 
 ```bash
-sudo nano /etc/nginx/sites-available/boycott_pk
+sudo nano /etc/nginx/sites-available/buypakistani
 ```
 
 ```nginx
@@ -198,14 +198,14 @@ server {
 
     # Static files
     location /static/ {
-        root /var/www/boycott_pk/staticfiles;
+        root /var/www/buypakistani/staticfiles;
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
 
     # Media files (user avatars)
     location /media/ {
-        root /var/www/boycott_pk/media;
+        root /var/www/buypakistani/media;
         expires 1d;
         add_header Cache-Control "public";
     }
@@ -224,7 +224,7 @@ server {
 Enable the site:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/boycott_pk /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/buypakistani /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -285,31 +285,31 @@ sudo nano /etc/logrotate.d/gunicorn
 
 ```bash
 # Create backup script
-sudo nano /usr/local/bin/backup_boycott_pk.sh
+sudo nano /usr/local/bin/backup_buypakistani.sh
 ```
 
 ```bash
 #!/bin/bash
-BACKUP_DIR="/var/backups/boycott_pk"
+BACKUP_DIR="/var/backups/buypakistani"
 DATE=$(date +%Y%m%d_%H%M%S)
 mkdir -p $BACKUP_DIR
 
 # MySQL backup
-mysqldump -u boycott_pk -p'your_secure_password' boycott_pk > $BACKUP_DIR/db_$DATE.sql
+mysqldump -u buypakistani -p'your_secure_password' buypakistani > $BACKUP_DIR/db_$DATE.sql
 
 # Media files backup
-tar -czf $BACKUP_DIR/media_$DATE.tar.gz /var/www/boycott_pk/media
+tar -czf $BACKUP_DIR/media_$DATE.tar.gz /var/www/buypakistani/media
 
 # Keep only last 7 days
 find $BACKUP_DIR -type f -mtime +7 -delete
 ```
 
 ```bash
-sudo chmod +x /usr/local/bin/backup_boycott_pk.sh
+sudo chmod +x /usr/local/bin/backup_buypakistani.sh
 
 # Add to crontab (daily at 2 AM)
 sudo crontab -e
-# Add: 0 2 * * * /usr/local/bin/backup_boycott_pk.sh
+# Add: 0 2 * * * /usr/local/bin/backup_buypakistani.sh
 ```
 
 ---
@@ -333,7 +333,7 @@ sudo tail -f /var/log/nginx/error.log
 ### Update Application
 
 ```bash
-cd /var/www/boycott_pk
+cd /var/www/buypakistani
 sudo git pull
 source venv/bin/activate
 pip install -r requirements.txt
@@ -397,17 +397,17 @@ CREATE INDEX idx_product_subcategory ON core_boycottproduct(subcategory_id);
 ### Static Files Not Loading
 - Run `python manage.py collectstatic --noinput`
 - Check Nginx `root` path matches `STATIC_ROOT`
-- Verify file permissions: `sudo chown -R www-data:www-data /var/www/boycott_pk/staticfiles`
+- Verify file permissions: `sudo chown -R www-data:www-data /var/www/buypakistani/staticfiles`
 
 ### Database Connection Errors
 - Verify MySQL is running: `sudo systemctl status mysql`
 - Check credentials in `.env`
-- Test connection: `mysql -u boycott_pk -p boycott_pk`
+- Test connection: `mysql -u buypakistani -p buypakistani`
 
 ### Permission Denied on Media Uploads
 ```bash
-sudo chown -R www-data:www-data /var/www/boycott_pk/media
-sudo chmod -R 755 /var/www/boycott_pk/media
+sudo chown -R www-data:www-data /var/www/buypakistani/media
+sudo chmod -R 755 /var/www/buypakistani/media
 ```
 
 ---
@@ -424,10 +424,10 @@ sudo journalctl -u gunicorn -f
 sudo tail -f /var/log/nginx/access.log
 
 # Run Django management commands
-cd /var/www/boycott_pk
+cd /var/www/buypakistani
 source venv/bin/activate
 python manage.py <command>
 
 # Update application
-cd /var/www/boycott_pk && sudo git pull && source venv/bin/activate && pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput && sudo systemctl restart gunicorn
+cd /var/www/buypakistani && sudo git pull && source venv/bin/activate && pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput && sudo systemctl restart gunicorn
 ```
