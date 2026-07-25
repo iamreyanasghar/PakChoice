@@ -126,3 +126,6 @@ coverage.xml
 *.cover
 *.py,cover
 .tox/
+
+# Others
+issues.txt
