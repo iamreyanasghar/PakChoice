@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils import timezone
-from .models import Category, SubCategory, BoycottProduct, PakistaniAlternative, UserProfile, AlternativeVote
+from .models import Category, SubCategory, Product, Alternative, UserProfile, Vote
 
 
 @admin.register(UserProfile)
@@ -15,7 +15,7 @@ class SubCategoryInline(admin.TabularInline):
 
 
 class ProductInline(admin.TabularInline):
-    model = BoycottProduct
+    model = Product
     extra = 1
     fields = ('name', 'brand', 'verified')
 
@@ -35,8 +35,8 @@ class SubCategoryAdmin(admin.ModelAdmin):
     inlines = [ProductInline]
 
 
-@admin.register(BoycottProduct)
-class BoycottProductAdmin(admin.ModelAdmin):
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
     list_display = ('name', 'brand', 'subcategory', 'verified')
     list_filter = ('subcategory__category', 'verified')
     prepopulated_fields = {'slug': ('name',)}
@@ -67,7 +67,7 @@ def request_changes(modeladmin, request, queryset):
     modeladmin.message_user(request, f'{updated} alternative(s) marked as needs changes.')
 
 
-@admin.register(PakistaniAlternative)
+@admin.register(Alternative)
 class AlternativeAdmin(admin.ModelAdmin):
     list_display = ('name', 'brand', 'product', 'status', 'added_by', 'reviewed_by', 'reviewed_at', 'upvotes')
     list_filter = ('status', 'product__subcategory__category')
@@ -87,8 +87,8 @@ class AlternativeAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-@admin.register(AlternativeVote)
-class AlternativeVoteAdmin(admin.ModelAdmin):
+@admin.register(Vote)
+class VoteAdmin(admin.ModelAdmin):
     list_display = ('user', 'alternative', 'alternative_product', 'alternative_brand')
     list_filter = ('alternative__product__subcategory__category',)
     search_fields = ('user__username', 'alternative__name', 'alternative__brand')

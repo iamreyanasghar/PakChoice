@@ -116,7 +116,6 @@
         <h2 class="text-xl font-bold mb-1">💡 Suggest an Alternative</h2>
         <p class="text-sm mb-6" style="color:var(--text-muted)">Know a great Pakistani product? Help the community.</p>
 
-        {% if user.is_authenticated %}
         <form method="post" action="{% url 'add_alternative' product.slug %}" class="space-y-4">
             {% csrf_token %}
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -149,15 +148,6 @@
                 ✅ Submit Alternative
             </button>
         </form>
-        {% else %}
-        <div class="text-center py-8">
-            <p class="mb-4" style="color:var(--text-secondary)">Login to suggest Pakistani alternatives.</p>
-            <div class="flex gap-3 justify-center">
-                <a href="{% url 'login' %}?next={{ request.path }}" class="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold transition">Login</a>
-                <a href="{% url 'register' %}" class="px-6 py-3 rounded-xl glass glass-hover font-semibold transition">Register</a>
-            </div>
-        </div>
-        {% endif %}
     </div>
 </div>
 {% endblock %}
@@ -165,13 +155,10 @@
 {% block extra_js %}
 <script>
 async function vote(altId, btn) {
-    {% if not user.is_authenticated %}
-    window.location = '{% url "login" %}';
-    return;
-    {% endif %}
     const res = await fetch(`/upvote/${altId}/`, {
         method: 'POST',
-        headers: {'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json'}
+        headers: {'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json'},
+        credentials: 'same-origin'
     });
     const data = await res.json();
     if (data.upvotes !== undefined) {

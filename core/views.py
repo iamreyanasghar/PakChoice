@@ -12,7 +12,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from .decorators import rate_limit
 from .security_logger import log_security_event
-from .models import Category, SubCategory, BoycottProduct, PakistaniAlternative, AlternativeVote, UserProfile
+from .models import Category, SubCategory, Product, Alternative, Vote, UserProfile
 from .forms import RegisterForm, LoginForm, AlternativeForm, AvatarForm, ProfileSettingsForm, PasswordChangeForm, ModerationForm, ForgotPasswordForm, VerifySecurityForm, ResetPasswordForm, SecuritySettingsForm
 
 User = get_user_model()
@@ -62,7 +62,7 @@ def sitemap(request):
         })
     
     # Add products
-    for product in BoycottProduct.objects.filter(verified=True, is_active=True):
+    for product in Product.objects.filter(verified=True, is_active=True):
         urls.append({
             'loc': request.build_absolute_uri(reverse('product_detail', args=[product.slug])),
             'priority': '0.5',
@@ -89,8 +89,8 @@ def home(request):
     categories = Category.objects.filter(is_active=True).annotate(
         subcategory_count=Count('subcategories')
     ).prefetch_related('subcategories').all()
-    total_products = BoycottProduct.objects.filter(verified=True, is_active=True).count()
-    total_alternatives = PakistaniAlternative.objects.filter(status='approved', is_active=True).count()
+    total_products = Product.objects.filter(verified=True, is_active=True).count()
+    total_alternatives = Alternative.objects.filter(status='approved', is_active=True).count()
     return render(request, 'core/home.html', {
         'categories': categories,
         'total_products': total_products,
@@ -118,11 +118,11 @@ def subcategory_detail(request, cat_slug, sub_slug):
 
 
 def product_detail(request, slug):
-    product = get_object_or_404(BoycottProduct, slug=slug, is_active=True)
+    product = get_object_or_404(Product, slug=slug, is_active=True)
     alternatives = product.alternatives.filter(status='approved', is_active=True)
     user_votes = set()
     if request.user.is_authenticated:
-        user_votes = set(AlternativeVote.objects.filter(
+        user_votes = set(Vote.objects.filter(
             user=request.user, alternative__in=alternatives
         ).values_list('alternative_id', flat=True))
     form = AlternativeForm()
@@ -134,12 +134,12 @@ def product_detail(request, slug):
 
 @require_POST
 def add_alternative(request, slug):
-    product = get_object_or_404(BoycottProduct, slug=slug)
+    product = get_object_or_404(Product, slug=slug)
     form = AlternativeForm(request.POST)
     if form.is_valid():
         alt = form.save(commit=False)
         alt.product = product
-        alt.added_by = request.user
+        alt.added_by = request.user if request.user.is_authenticated else None
         alt.status = 'pending'
         alt.save()
         messages.success(request, '✅ Alternative submitted! It will appear after admin review.')
@@ -150,23 +150,39 @@ def add_alternative(request, slug):
 
 
 @require_POST
-@login_required
 @rate_limit(key_prefix='upvote', limit=30, period=60)
 def upvote_alternative(request, pk):
-    alt = get_object_or_404(PakistaniAlternative, pk=pk, status='approved')
+    alt = get_object_or_404(Alternative, pk=pk, status='approved')
     with transaction.atomic():
-        alt = PakistaniAlternative.objects.select_for_update().get(pk=pk)
-        existing_vote = AlternativeVote.objects.filter(
-            user=request.user, alternative=alt
-        ).first()
-        if existing_vote:
-            existing_vote.delete()
-            alt.upvotes = F('upvotes') - 1
-            voted = False
+        alt = Alternative.objects.select_for_update().get(pk=pk)
+        voted = False
+        if request.user.is_authenticated:
+            existing_vote = Vote.objects.filter(
+                user=request.user, alternative=alt
+            ).first()
+            if existing_vote:
+                existing_vote.delete()
+                alt.upvotes = F('upvotes') - 1
+                voted = False
+            else:
+                Vote.objects.create(user=request.user, alternative=alt)
+                alt.upvotes = F('upvotes') + 1
+                voted = True
         else:
-            AlternativeVote.objects.create(user=request.user, alternative=alt)
-            alt.upvotes = F('upvotes') + 1
-            voted = True
+            # Anonymous users: track votes in session
+            voted_alternatives = request.session.get('voted_alternatives', [])
+            if pk in voted_alternatives:
+                # Remove vote
+                voted_alternatives.remove(pk)
+                alt.upvotes = F('upvotes') - 1
+                voted = False
+            else:
+                # Add vote
+                voted_alternatives.append(pk)
+                alt.upvotes = F('upvotes') + 1
+                voted = True
+            request.session['voted_alternatives'] = voted_alternatives
+            request.session.modified = True
         alt.save()
         alt.refresh_from_db(fields=['upvotes'])
     return JsonResponse({'upvotes': max(0, alt.upvotes), 'voted': voted})
@@ -192,13 +208,13 @@ def search_suggestions(request):
         suggestions.add(name)
 
     # Match product names and brands
-    for name in BoycottProduct.objects.filter(is_active=True, verified=True).filter(
+    for name in Product.objects.filter(is_active=True, verified=True).filter(
         Q(name__icontains=q) | Q(brand__icontains=q)
     ).values_list('name', flat=True):
         suggestions.add(name)
 
-    # Match Pakistani alternative names
-    for name in PakistaniAlternative.objects.filter(is_active=True, status='approved').filter(
+    # Match alternative names
+    for name in Alternative.objects.filter(is_active=True, status='approved').filter(
         Q(name__icontains=q) | Q(brand__icontains=q)
     ).values_list('name', flat=True):
         suggestions.add(name)
@@ -215,7 +231,7 @@ def search(request):
     alternative_page = request.GET.get('alternative_page', 1)
 
     if q:
-        products_qs = BoycottProduct.objects.filter(
+        products_qs = Product.objects.filter(
             Q(name__icontains=q) | Q(brand__icontains=q) | Q(reason__icontains=q),
             is_active=True
         ).select_related('subcategory__category')
@@ -236,7 +252,7 @@ def search(request):
         subcategories_paginator = Paginator(subcategories_qs, 10)
         subcategories = subcategories_paginator.get_page(subcategory_page)
 
-        alternatives_qs = PakistaniAlternative.objects.filter(
+        alternatives_qs = Alternative.objects.filter(
             Q(name__icontains=q) | Q(brand__icontains=q) | Q(description__icontains=q),
             status='approved',
             is_active=True
@@ -246,7 +262,7 @@ def search(request):
 
     # Dynamic suggestions from popular categories and products
     suggestions = list(Category.objects.filter(is_active=True).order_by('order')[:6].values_list('name', flat=True))
-    popular_products = list(BoycottProduct.objects.filter(verified=True, is_active=True).order_by('name')[:4].values_list('name', flat=True))
+    popular_products = list(Product.objects.filter(verified=True, is_active=True).order_by('name')[:4].values_list('name', flat=True))
     suggestions.extend(popular_products)
 
     total = 0
@@ -347,10 +363,10 @@ def logout_view(request):
 
 @login_required
 def dashboard(request):
-    alternatives = PakistaniAlternative.objects.filter(
+    alternatives = Alternative.objects.filter(
         added_by=request.user
     ).select_related('product__subcategory__category').order_by('-created_at')
-    votes = AlternativeVote.objects.filter(
+    votes = Vote.objects.filter(
         user=request.user
     ).select_related('alternative__product').order_by('-alternative__created_at')
     return render(request, 'core/dashboard.html', {
@@ -373,20 +389,20 @@ def admin_dashboard(request):
     from django.utils import timezone as tz
     from datetime import timedelta
     week_ago = tz.now() - timedelta(days=7)
-    pending = PakistaniAlternative.objects.filter(status='pending').select_related('product', 'added_by').order_by('created_at')
+    pending = Alternative.objects.filter(status='pending').select_related('product', 'added_by').order_by('created_at')
     stats = {
-        'pending': PakistaniAlternative.objects.filter(status='pending').count(),
-        'approved_week': PakistaniAlternative.objects.filter(status='approved', reviewed_at__gte=week_ago).count(),
-        'rejected_week': PakistaniAlternative.objects.filter(status='rejected', reviewed_at__gte=week_ago).count(),
-        'needs_changes': PakistaniAlternative.objects.filter(status='needs_changes').count(),
-        'total': PakistaniAlternative.objects.count(),
+        'pending': Alternative.objects.filter(status='pending').count(),
+        'approved_week': Alternative.objects.filter(status='approved', reviewed_at__gte=week_ago).count(),
+        'rejected_week': Alternative.objects.filter(status='rejected', reviewed_at__gte=week_ago).count(),
+        'needs_changes': Alternative.objects.filter(status='needs_changes').count(),
+        'total': Alternative.objects.count(),
     }
     return render(request, 'core/admin_dashboard.html', {'pending': pending, 'stats': stats})
 
 
 @user_passes_test(_staff_required, login_url='/login/')
 def moderate_alternative(request, pk):
-    alt = get_object_or_404(PakistaniAlternative, pk=pk)
+    alt = get_object_or_404(Alternative, pk=pk)
     old_status = alt.status
     form = ModerationForm(instance=alt)
 

@@ -12,8 +12,8 @@ from datetime import timedelta
 import json
 
 from .models import (
-    Category, SubCategory, BoycottProduct, PakistaniAlternative,
-    AlternativeVote, UserProfile
+    Category, SubCategory, Product, Alternative,
+    Vote, UserProfile
 )
 from .forms import (
     RegisterForm, LoginForm, AlternativeForm, AvatarForm,
@@ -70,7 +70,7 @@ class SubCategoryModelTests(TestCase):
             )
 
 
-class BoycottProductModelTests(TestCase):
+class ProductModelTests(TestCase):
     def setUp(self):
         self.category = Category.objects.create(name='Food', slug='food', order=1)
         self.subcategory = SubCategory.objects.create(
@@ -78,7 +78,7 @@ class BoycottProductModelTests(TestCase):
         )
 
     def test_create_product(self):
-        product = BoycottProduct.objects.create(
+        product = Product.objects.create(
             subcategory=self.subcategory,
             name='Test Product',
             slug='test-product',
@@ -90,24 +90,24 @@ class BoycottProductModelTests(TestCase):
         self.assertTrue(product.verified)  # default is True
 
     def test_product_ordering(self):
-        BoycottProduct.objects.create(
+        Product.objects.create(
             subcategory=self.subcategory, name='B', slug='b', brand='Brand B'
         )
-        BoycottProduct.objects.create(
+        Product.objects.create(
             subcategory=self.subcategory, name='A', slug='a', brand='Brand A'
         )
-        products = list(BoycottProduct.objects.all())
+        products = list(Product.objects.all())
         self.assertEqual(products[0].name, 'A')
         self.assertEqual(products[1].name, 'B')
 
 
-class PakistaniAlternativeModelTests(TestCase):
+class AlternativeModelTests(TestCase):
     def setUp(self):
         self.category = Category.objects.create(name='Food', slug='food', order=1)
         self.subcategory = SubCategory.objects.create(
             category=self.category, name='Fast Food', slug='fast-food'
         )
-        self.product = BoycottProduct.objects.create(
+        self.product = Product.objects.create(
             subcategory=self.subcategory,
             name='McDonalds',
             slug='mcdonalds',
@@ -119,7 +119,7 @@ class PakistaniAlternativeModelTests(TestCase):
         )
 
     def test_create_alternative(self):
-        alt = PakistaniAlternative.objects.create(
+        alt = Alternative.objects.create(
             product=self.product,
             name='Local Burger',
             brand='Local Brand',
@@ -131,7 +131,7 @@ class PakistaniAlternativeModelTests(TestCase):
         self.assertFalse(alt.is_visible())
 
     def test_approved_alternative_is_visible(self):
-        alt = PakistaniAlternative.objects.create(
+        alt = Alternative.objects.create(
             product=self.product,
             name='Local Burger',
             brand='Local Brand',
@@ -140,39 +140,39 @@ class PakistaniAlternativeModelTests(TestCase):
         self.assertTrue(alt.is_visible())
 
     def test_upvotes_default(self):
-        alt = PakistaniAlternative.objects.create(
+        alt = Alternative.objects.create(
             product=self.product, name='Alt', brand='Brand', status='approved'
         )
         self.assertEqual(alt.upvotes, 0)
 
 
-class AlternativeVoteModelTests(TestCase):
+class VoteModelTests(TestCase):
     def setUp(self):
         self.category = Category.objects.create(name='Food', slug='food', order=1)
         self.subcategory = SubCategory.objects.create(
             category=self.category, name='Fast Food', slug='fast-food'
         )
-        self.product = BoycottProduct.objects.create(
+        self.product = Product.objects.create(
             subcategory=self.subcategory,
             name='McDonalds',
             slug='mcdonalds',
             brand='McDonalds Corp',
             reason='Test reason'
         )
-        self.alternative = PakistaniAlternative.objects.create(
+        self.alternative = Alternative.objects.create(
             product=self.product, name='Local Burger', brand='Local', status='approved'
         )
         self.user1 = User.objects.create_user(username='user1', password='pass1')
         self.user2 = User.objects.create_user(username='user2', password='pass2')
 
     def test_unique_vote_per_user(self):
-        AlternativeVote.objects.create(user=self.user1, alternative=self.alternative)
+        Vote.objects.create(user=self.user1, alternative=self.alternative)
         with self.assertRaises(Exception):
-            AlternativeVote.objects.create(user=self.user1, alternative=self.alternative)
+            Vote.objects.create(user=self.user1, alternative=self.alternative)
 
     def test_different_users_can_vote(self):
-        AlternativeVote.objects.create(user=self.user1, alternative=self.alternative)
-        vote2 = AlternativeVote.objects.create(user=self.user2, alternative=self.alternative)
+        Vote.objects.create(user=self.user1, alternative=self.alternative)
+        vote2 = Vote.objects.create(user=self.user2, alternative=self.alternative)
         self.assertIsNotNone(vote2.pk)
 
 
@@ -262,7 +262,7 @@ class ProductDetailViewTests(TestCase):
         self.subcategory = SubCategory.objects.create(
             category=self.category, name='Fast Food', slug='fast-food'
         )
-        self.product = BoycottProduct.objects.create(
+        self.product = Product.objects.create(
             subcategory=self.subcategory,
             name='McDonalds',
             slug='mcdonalds',
@@ -286,7 +286,7 @@ class SearchViewTests(TestCase):
         self.subcategory = SubCategory.objects.create(
             category=self.category, name='Fast Food', slug='fast-food'
         )
-        self.product = BoycottProduct.objects.create(
+        self.product = Product.objects.create(
             subcategory=self.subcategory,
             name='McDonalds',
             slug='mcdonalds',
@@ -402,14 +402,14 @@ class DashboardViewTests(TestCase):
         self.subcategory = SubCategory.objects.create(
             category=self.category, name='Fast Food', slug='fast-food'
         )
-        self.product = BoycottProduct.objects.create(
+        self.product = Product.objects.create(
             subcategory=self.subcategory,
             name='McDonalds',
             slug='mcdonalds',
             brand='McDonalds',
             reason='Test reason'
         )
-        self.alternative = PakistaniAlternative.objects.create(
+        self.alternative = Alternative.objects.create(
             product=self.product,
             name='Local Burger',
             brand='Local',
@@ -471,7 +471,7 @@ class AddAlternativeViewTests(TestCase):
         self.subcategory = SubCategory.objects.create(
             category=self.category, name='Fast Food', slug='fast-food'
         )
-        self.product = BoycottProduct.objects.create(
+        self.product = Product.objects.create(
             subcategory=self.subcategory,
             name='McDonalds',
             slug='mcdonalds',
@@ -479,9 +479,21 @@ class AddAlternativeViewTests(TestCase):
             reason='Test reason'
         )
 
-    def test_add_alternative_requires_login(self):
-        response = self.client.post(reverse('add_alternative', args=['mcdonalds']))
+    def test_add_alternative_anonymous(self):
+        response = self.client.post(reverse('add_alternative', args=['mcdonalds']), {
+            'name': 'Local Burger',
+            'brand': 'Local Brand',
+            'description': 'Great alternative',
+            'image_url': 'https://example.com/image.jpg',
+            'website': 'https://example.com'
+        })
         self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            Alternative.objects.filter(name='Local Burger').exists()
+        )
+        alt = Alternative.objects.get(name='Local Burger')
+        self.assertEqual(alt.status, 'pending')
+        self.assertIsNone(alt.added_by)
 
     def test_add_alternative_success(self):
         self.client.login(username='testuser', password='testpass123')
@@ -494,9 +506,9 @@ class AddAlternativeViewTests(TestCase):
         })
         self.assertEqual(response.status_code, 302)
         self.assertTrue(
-            PakistaniAlternative.objects.filter(name='Local Burger').exists()
+            Alternative.objects.filter(name='Local Burger').exists()
         )
-        alt = PakistaniAlternative.objects.get(name='Local Burger')
+        alt = Alternative.objects.get(name='Local Burger')
         self.assertEqual(alt.status, 'pending')
         self.assertEqual(alt.added_by, self.user)
 
@@ -510,23 +522,37 @@ class UpvoteViewTests(TestCase):
         self.subcategory = SubCategory.objects.create(
             category=self.category, name='Fast Food', slug='fast-food'
         )
-        self.product = BoycottProduct.objects.create(
+        self.product = Product.objects.create(
             subcategory=self.subcategory,
             name='McDonalds',
             slug='mcdonalds',
             brand='McDonalds',
             reason='Test reason'
         )
-        self.alternative = PakistaniAlternative.objects.create(
+        self.alternative = Alternative.objects.create(
             product=self.product,
             name='Local Burger',
             brand='Local',
             status='approved'
         )
 
-    def test_upvote_requires_login(self):
+    def test_upvote_anonymous(self):
+        # First upvote
         response = self.client.post(reverse('upvote', args=[self.alternative.pk]))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['voted'])
+        self.assertEqual(data['upvotes'], 1)
+        # Anonymous votes are not tracked in Vote
+        self.assertFalse(
+            Vote.objects.filter(alternative=self.alternative).exists()
+        )
+        # Second upvote (should toggle off)
+        response = self.client.post(reverse('upvote', args=[self.alternative.pk]))
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertFalse(data['voted'])
+        self.assertEqual(data['upvotes'], 0)
 
     def test_upvote_creates_vote(self):
         self.client.login(username='testuser', password='testpass123')
@@ -536,7 +562,7 @@ class UpvoteViewTests(TestCase):
         self.assertTrue(data['voted'])
         self.assertEqual(data['upvotes'], 1)
         self.assertTrue(
-            AlternativeVote.objects.filter(
+            Vote.objects.filter(
                 user=self.user, alternative=self.alternative
             ).exists()
         )
@@ -567,14 +593,14 @@ class AdminViewTests(TestCase):
         self.subcategory = SubCategory.objects.create(
             category=self.category, name='Fast Food', slug='fast-food'
         )
-        self.product = BoycottProduct.objects.create(
+        self.product = Product.objects.create(
             subcategory=self.subcategory,
             name='McDonalds',
             slug='mcdonalds',
             brand='McDonalds',
             reason='Test reason'
         )
-        self.alternative = PakistaniAlternative.objects.create(
+        self.alternative = Alternative.objects.create(
             product=self.product,
             name='Local Burger',
             brand='Local',
@@ -626,14 +652,14 @@ class ModerationViewTests(TestCase):
         self.subcategory = SubCategory.objects.create(
             category=self.category, name='Fast Food', slug='fast-food'
         )
-        self.product = BoycottProduct.objects.create(
+        self.product = Product.objects.create(
             subcategory=self.subcategory,
             name='McDonalds',
             slug='mcdonalds',
             brand='McDonalds',
             reason='Test reason'
         )
-        self.alternative = PakistaniAlternative.objects.create(
+        self.alternative = Alternative.objects.create(
             product=self.product,
             name='Local Burger',
             brand='Local',
@@ -924,7 +950,7 @@ class FullWorkflowTests(TestCase):
         self.subcategory = SubCategory.objects.create(
             category=self.category, name='Fast Food', slug='fast-food'
         )
-        self.product = BoycottProduct.objects.create(
+        self.product = Product.objects.create(
             subcategory=self.subcategory,
             name='McDonalds',
             slug='mcdonalds',
@@ -964,7 +990,7 @@ class FullWorkflowTests(TestCase):
             'website': ''
         })
         self.assertEqual(response.status_code, 302)
-        alt = PakistaniAlternative.objects.get(name='Local Burger')
+        alt = Alternative.objects.get(name='Local Burger')
         self.assertEqual(alt.status, 'pending')
         self.assertEqual(alt.added_by, user)
 

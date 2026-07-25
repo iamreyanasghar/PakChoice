@@ -7,7 +7,7 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from django.core.paginator import Paginator
 from datetime import timedelta
-from .models import Category, SubCategory, BoycottProduct, PakistaniAlternative, UserProfile
+from .models import Category, SubCategory, Product, Alternative, UserProfile
 from .admin_forms import CategoryForm, SubCategoryForm, ProductForm, AlternativeForm, AlternativeModerationForm, UserEditForm, UserProfileEditForm
 
 User = get_user_model()
@@ -16,16 +16,16 @@ User = get_user_model()
 TRASH_MODEL_MAP = {
     'categories': (Category, 'category'),
     'subcategories': (SubCategory, 'subcategory'),
-    'products': (BoycottProduct, 'product'),
-    'alternatives': (PakistaniAlternative, 'alternative'),
+    'products': (Product, 'product'),
+    'alternatives': (Alternative, 'alternative'),
     'users': (User, 'user'),
 }
 
 TRASH_MODEL_CLASSES = {
     'categories': Category,
     'subcategories': SubCategory,
-    'products': BoycottProduct,
-    'alternatives': PakistaniAlternative,
+    'products': Product,
+    'alternatives': Alternative,
     'users': User,
 }
 
@@ -45,15 +45,15 @@ def admin_overview(request):
     stats = {
         'categories': Category.objects.count(),
         'subcategories': SubCategory.objects.count(),
-        'products': BoycottProduct.objects.count(),
-        'products_verified': BoycottProduct.objects.filter(verified=True).count(),
-        'alternatives': PakistaniAlternative.objects.count(),
-        'alternatives_pending': PakistaniAlternative.objects.filter(status='pending').count(),
-        'alternatives_approved': PakistaniAlternative.objects.filter(status='approved').count(),
+        'products': Product.objects.count(),
+        'products_verified': Product.objects.filter(verified=True).count(),
+        'alternatives': Alternative.objects.count(),
+        'alternatives_pending': Alternative.objects.filter(status='pending').count(),
+        'alternatives_approved': Alternative.objects.filter(status='approved').count(),
         'users': User.objects.count(),
     }
 
-    recent_alternatives = PakistaniAlternative.objects.select_related(
+    recent_alternatives = Alternative.objects.select_related(
         'product', 'added_by'
     ).order_by('-created_at')[:10]
 
@@ -236,7 +236,7 @@ def admin_subcategory_delete(request, pk):
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_product_list(request):
     query = request.GET.get('q', '').strip()
-    products_qs = BoycottProduct.objects.filter(is_active=True).select_related(
+    products_qs = Product.objects.filter(is_active=True).select_related(
         'subcategory__category'
     ).annotate(alt_count=Count('alternatives')).order_by('name')
 
@@ -260,7 +260,7 @@ def admin_product_create(request):
     if request.method == 'POST':
         form = ProductForm(request.POST)
         if form.is_valid():
-            if BoycottProduct.objects.filter(slug=form.cleaned_data['slug']).exists():
+            if Product.objects.filter(slug=form.cleaned_data['slug']).exists():
                 messages.error(request, 'A product with this slug already exists.')
             else:
                 form.save()
@@ -279,12 +279,12 @@ def admin_product_create(request):
 
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_product_edit(request, pk):
-    product = get_object_or_404(BoycottProduct, pk=pk)
+    product = get_object_or_404(Product, pk=pk)
     subcategories = SubCategory.objects.filter(is_active=True).select_related('category').all()
     if request.method == 'POST':
         form = ProductForm(request.POST, instance=product)
         if form.is_valid():
-            if BoycottProduct.objects.filter(slug=form.cleaned_data['slug']).exclude(pk=pk).exists():
+            if Product.objects.filter(slug=form.cleaned_data['slug']).exclude(pk=pk).exists():
                 messages.error(request, 'A product with this slug already exists.')
             else:
                 form.save()
@@ -303,7 +303,7 @@ def admin_product_edit(request, pk):
 
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_product_delete(request, pk):
-    product = get_object_or_404(BoycottProduct, pk=pk)
+    product = get_object_or_404(Product, pk=pk)
     if request.method == 'POST':
         name = product.name
         product.is_active = False
@@ -324,7 +324,7 @@ def admin_product_delete(request, pk):
 def admin_alternative_list(request):
     alt_status = request.GET.get('status', '')
     query = request.GET.get('q', '').strip()
-    alternatives_qs = PakistaniAlternative.objects.filter(is_active=True).select_related(
+    alternatives_qs = Alternative.objects.filter(is_active=True).select_related(
         'product', 'added_by', 'reviewed_by'
     ).order_by('-created_at')
 
@@ -348,7 +348,7 @@ def admin_alternative_list(request):
 
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_alternative_create(request):
-    products = BoycottProduct.objects.filter(is_active=True, verified=True).select_related('subcategory__category').all()
+    products = Product.objects.filter(is_active=True, verified=True).select_related('subcategory__category').all()
     if request.method == 'POST':
         form = AlternativeForm(request.POST)
         if form.is_valid():
@@ -357,8 +357,8 @@ def admin_alternative_create(request):
             product_pk = request.POST.get('product_pk')
             if product_pk and not alt.product_id:
                 try:
-                    alt.product = BoycottProduct.objects.get(pk=product_pk)
-                except BoycottProduct.DoesNotExist:
+                    alt.product = Product.objects.get(pk=product_pk)
+                except Product.DoesNotExist:
                     pass
             alt.save()
             messages.success(request, f'✅ Alternative "{alt.name}" created successfully.')
@@ -380,7 +380,7 @@ def admin_alternative_create(request):
 
 @user_passes_test(_admin_required, login_url='/login/')
 def admin_alternative_delete(request, pk):
-    alt = get_object_or_404(PakistaniAlternative, pk=pk)
+    alt = get_object_or_404(Alternative, pk=pk)
     if request.method == 'POST':
         name = alt.name
         alt.is_active = False
@@ -493,8 +493,8 @@ def admin_trash(request):
     trash_stats = {
         'categories': Category.objects.filter(is_active=False).count(),
         'subcategories': SubCategory.objects.filter(is_active=False).count(),
-        'products': BoycottProduct.objects.filter(is_active=False).count(),
-        'alternatives': PakistaniAlternative.objects.filter(is_active=False).count(),
+        'products': Product.objects.filter(is_active=False).count(),
+        'alternatives': Alternative.objects.filter(is_active=False).count(),
         'users': User.objects.filter(is_active=False).count(),
     }
     total_trash = sum(trash_stats.values())
@@ -504,8 +504,8 @@ def admin_trash(request):
     purgeable = {
         'categories': Category.objects.filter(is_active=False, deleted_at__lt=purge_cutoff).count(),
         'subcategories': SubCategory.objects.filter(is_active=False, deleted_at__lt=purge_cutoff).count(),
-        'products': BoycottProduct.objects.filter(is_active=False, deleted_at__lt=purge_cutoff).count(),
-        'alternatives': PakistaniAlternative.objects.filter(is_active=False, deleted_at__lt=purge_cutoff).count(),
+        'products': Product.objects.filter(is_active=False, deleted_at__lt=purge_cutoff).count(),
+        'alternatives': Alternative.objects.filter(is_active=False, deleted_at__lt=purge_cutoff).count(),
         'users': User.objects.filter(is_active=False).count(),
     }
 

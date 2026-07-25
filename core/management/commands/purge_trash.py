@@ -7,7 +7,7 @@ import logging
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from datetime import timedelta
-from core.models import Category, SubCategory, BoycottProduct, PakistaniAlternative
+from core.models import Category, SubCategory, Product, Alternative
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 MODELS_TO_PURGE = [
     (Category, 'categories'),
     (SubCategory, 'subcategories'),
-    (BoycottProduct, 'products'),
-    (PakistaniAlternative, 'alternatives'),
+    (Product, 'products'),
+    (Alternative, 'alternatives'),
     (User, 'users'),
 ]
 

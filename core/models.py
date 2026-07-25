@@ -7,6 +7,7 @@ from django.contrib.auth.hashers import make_password, check_password
 
 User = get_user_model()
 
+
 class UserProfile(models.Model):
     SECURITY_QUESTIONS = [
         ('color', 'What is your favorite color?'),
@@ -101,7 +102,7 @@ class SubCategory(models.Model):
         return f"{self.category.name} → {self.name}"
 
 
-class BoycottProduct(models.Model):
+class Product(models.Model):
     subcategory = models.ForeignKey(SubCategory, on_delete=models.CASCADE, related_name='products')
     name = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)
@@ -123,14 +124,14 @@ class BoycottProduct(models.Model):
         return self.name
 
 
-class PakistaniAlternative(models.Model):
+class Alternative(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending Review'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
         ('needs_changes', 'Needs Changes'),
     ]
-    product = models.ForeignKey(BoycottProduct, on_delete=models.CASCADE, related_name='alternatives')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='alternatives')
     name = models.CharField(max_length=200)
     brand = models.CharField(max_length=200)
     description = models.TextField(blank=True)
@@ -159,9 +160,9 @@ class PakistaniAlternative(models.Model):
         return self.status == 'approved'
 
 
-class AlternativeVote(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    alternative = models.ForeignKey(PakistaniAlternative, on_delete=models.CASCADE)
+class Vote(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    alternative = models.ForeignKey(Alternative, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordChangeForm as DjangoPasswordChangeForm
 from django.contrib.auth import get_user_model
 User = get_user_model()
-from .models import PakistaniAlternative, UserProfile
+from .models import Alternative, UserProfile
 
 
 class RegisterForm(UserCreationForm):
@@ -273,7 +273,7 @@ class SecuritySettingsForm(forms.ModelForm):
 
 class AlternativeForm(forms.ModelForm):
     class Meta:
-        model = PakistaniAlternative
+        model = Alternative
         fields = ('name', 'brand', 'description', 'image_url', 'website')
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Product name'}),
@@ -291,7 +291,7 @@ class AlternativeForm(forms.ModelForm):
 
 class ModerationForm(forms.ModelForm):
     class Meta:
-        model = PakistaniAlternative
+        model = Alternative
         fields = ('name', 'brand', 'description', 'image_url', 'website', 'admin_notes', 'rejection_reason')
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Alternative name'}),

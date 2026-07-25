@@ -3,7 +3,7 @@ ModelForms for the custom admin panel.
 Used by admin_views.py for validated CRUD operations.
 """
 from django import forms
-from .models import Category, SubCategory, BoycottProduct, PakistaniAlternative, User, UserProfile
+from .models import Category, SubCategory, Product, Alternative, User, UserProfile
 
 
 class CategoryForm(forms.ModelForm):
@@ -33,7 +33,7 @@ class SubCategoryForm(forms.ModelForm):
 
 class ProductForm(forms.ModelForm):
     class Meta:
-        model = BoycottProduct
+        model = Product
         fields = ['subcategory', 'name', 'slug', 'brand', 'country_of_origin', 'reason', 'image_url', 'logo_url', 'verified']
         widgets = {
             'subcategory': forms.Select(attrs={'class': 'form-input'}),
@@ -50,7 +50,7 @@ class ProductForm(forms.ModelForm):
 
 class AlternativeForm(forms.ModelForm):
     class Meta:
-        model = PakistaniAlternative
+        model = Alternative
         fields = ['product', 'name', 'brand', 'description', 'image_url', 'website', 'status']
         widgets = {
             'product': forms.Select(attrs={'class': 'form-input'}),
@@ -65,7 +65,7 @@ class AlternativeForm(forms.ModelForm):
 
 class AlternativeModerationForm(forms.ModelForm):
     class Meta:
-        model = PakistaniAlternative
+        model = Alternative
         fields = ['name', 'brand', 'description', 'image_url', 'website', 'admin_notes', 'rejection_reason']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Alternative name'}),
