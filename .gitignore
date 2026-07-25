@@ -51,7 +51,6 @@ db.sqlite3-journal
 *.sqlite
 
 # Logs
-logs/
 *.log
 debug.log
 
