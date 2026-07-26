@@ -28,7 +28,10 @@
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tag-red">🚫 Boycott</span>
                 <span class="text-xs" style="color:var(--text-muted)">{{ product.country_of_origin }}</span>
             </div>
-            {% if product.logo_url %}
+            {% if product.local_image %}
+            <img src="/static/img/{{ product.local_image }}" alt="{{ product.name }}" class="w-16 h-16 object-contain rounded-xl mb-4 p-2"
+                 style="background:var(--bg-card); border:1px solid var(--border)">
+            {% elif product.logo_url %}
             <img src="{{ product.logo_url }}" alt="{{ product.name }}" class="w-16 h-16 object-contain rounded-xl mb-4 p-2"
                  style="background:var(--bg-card); border:1px solid var(--border)">
             {% else %}

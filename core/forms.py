@@ -127,9 +127,9 @@ class AvatarForm(forms.ModelForm):
     def clean_avatar(self):
         avatar = self.cleaned_data.get('avatar')
         if avatar:
-            # Validate file size (max 5MB)
-            if avatar.size > 5 * 1024 * 1024:
-                raise forms.ValidationError('Image file too large. Maximum size is 5MB.')
+            # Validate file size (max 2MB)
+            if avatar.size > 2 * 1024 * 1024:
+                raise forms.ValidationError('Image file too large. Maximum size is 2MB.')
 
             # Validate file extension
             allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp']
@@ -272,9 +272,13 @@ class SecuritySettingsForm(forms.ModelForm):
 
 
 class AlternativeForm(forms.ModelForm):
+    local_image = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={'accept': 'image/*', 'class': 'form-input'})
+    )
     class Meta:
         model = Alternative
-        fields = ('name', 'brand', 'description', 'image_url', 'website')
+        fields = ('name', 'brand', 'description', 'image_url', 'local_image', 'website')
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Product name'}),
             'brand': forms.TextInput(attrs={'placeholder': 'Brand name'}),
@@ -290,9 +294,13 @@ class AlternativeForm(forms.ModelForm):
 
 
 class ModerationForm(forms.ModelForm):
+    local_image = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={'accept': 'image/*', 'class': 'form-input'})
+    )
     class Meta:
         model = Alternative
-        fields = ('name', 'brand', 'description', 'image_url', 'website', 'admin_notes', 'rejection_reason')
+        fields = ('name', 'brand', 'description', 'image_url', 'local_image', 'website', 'admin_notes', 'rejection_reason')
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Alternative name'}),
             'brand': forms.TextInput(attrs={'placeholder': 'Brand name'}),

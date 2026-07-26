@@ -27,6 +27,13 @@
             <div><label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Image URL</label><input type="url" name="image_url" value="{{ product.image_url|default:'' }}" placeholder="https://example.com/image.jpg" class="form-input"></div>
             <div><label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Logo URL</label><input type="url" name="logo_url" value="{{ product.logo_url|default:'' }}" placeholder="https://example.com/logo.png" class="form-input"></div>
         </div>
+        <div class="mt-4">
+            <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Local Image (upload to static/img/boycott/)</label>
+            <input type="file" name="local_image" accept="image/*" class="form-input">
+            {% if product.local_image %}
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Current: {{ product.local_image }}</p>
+            {% endif %}
+        </div>
         <label class="flex items-center gap-3">
             <input type="checkbox" name="verified" {% if mode == 'edit' and product.verified or mode == 'create' %}checked{% endif %} class="w-4 h-4">
             <span class="text-sm font-medium">Verified</span>

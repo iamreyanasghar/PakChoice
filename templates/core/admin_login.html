@@ -1,0 +1,106 @@
+{% extends 'core/base.html' %}
+{% block title %}Admin Login — BuyPakistani{% endblock %}
+
+{% block extra_css %}
+<style>
+.admin-login-wrapper {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+.admin-login-card {
+  width: 100%;
+  max-width: 400px;
+}
+.admin-login-card .glass {
+  padding: 2.5rem;
+}
+.admin-login-card h1 {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+.admin-login-card .subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-bottom: 2rem;
+}
+.admin-login-card .form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  transition: border-color 0.2s, background 0.3s;
+  outline: none;
+}
+.admin-login-card .form-input:focus {
+  border-color: #22c55e;
+}
+.admin-login-card .btn-submit {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.75rem;
+  background: #22c55e;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(34,197,94,0.3);
+}
+.admin-login-card .btn-submit:hover {
+  background: #16a34a;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34,197,94,0.4);
+}
+.admin-login-card .btn-submit:active {
+  transform: translateY(0);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-login-wrapper">
+    <div class="admin-login-card">
+        <div class="glass rounded-3xl">
+            <div class="text-center mb-8">
+                <span class="text-5xl block mb-4">🔒</span>
+                <h1 class="text-3xl font-black gradient-text">Admin Access</h1>
+                <p class="subtitle">Enter your staff credentials to continue</p>
+            </div>
+
+            {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for msg in messages %}
+                <div class="px-4 py-3 rounded-xl text-sm font-medium text-center
+                    {% if msg.tags == 'success' %}tag-green{% elif msg.tags == 'error' %}tag-red{% else %}glass{% endif %}">
+                    {{ msg }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-5">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs uppercase tracking-wider mb-2 font-semibold" style="color:var(--text-muted)">Username</label>
+                    {{ form.username }}
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider mb-2 font-semibold" style="color:var(--text-muted)">Password</label>
+                    {{ form.password }}
+                </div>
+                <button type="submit" class="btn-submit">
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

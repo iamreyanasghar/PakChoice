@@ -376,3 +376,51 @@ html.light .autocomplete-dropdown a strong {
 #mobileSearchInput.pr-10 {
   padding-right: 2.5rem;
 }
+
+/* ---------- Text Logo ---------- */
+.logo-text {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.logo-text .logo-buy {
+  color: #ffffff;
+}
+
+.logo-text .logo-pakistani {
+  color: #22c55e;
+}
+
+.logo-text .logo-org {
+  color: #64748b;
+}
+
+.logo-text .i-with-star {
+  position: relative;
+  display: inline-block;
+}
+
+.logo-text .i-with-star::after {
+  content: "★";
+  position: absolute;
+  top: calc(-0.4em + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: #FFD700;
+  font-size: 0.7em;
+  line-height: 1;
+}
+
+html.light .logo-text .logo-buy {
+  color: #0f172a;
+}
+
+html.light .logo-text .logo-pakistani {
+  color: #15803d;
+}
+
+html.light .logo-text .logo-org {
+  color: #64748b;
+}

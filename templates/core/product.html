@@ -1,5 +1,4 @@
 {% extends 'core/base.html' %}
-{% load widget_tweaks %}
 {% block title %}{{ product.name }} — BuyPakistani{% endblock %}
 
 {% block content %}
@@ -17,7 +16,11 @@
              style="background:var(--red-glow)"></div>
         <div class="relative flex flex-col sm:flex-row gap-8">
             <div class="flex-shrink-0">
-                {% if product.logo_url %}
+                {% if product.local_image %}
+                <img src="/static/img/{{ product.local_image }}" alt="{{ product.name }}"
+                     class="w-28 h-28 object-contain rounded-2xl p-3"
+                     style="background:var(--bg-card); border:1px solid var(--border)">
+                {% elif product.logo_url %}
                 <img src="{{ product.logo_url }}" alt="{{ product.name }}"
                      class="w-28 h-28 object-contain rounded-2xl p-3"
                      style="background:var(--bg-card); border:1px solid var(--border)">
@@ -54,7 +57,11 @@
                      style="background:var(--green-glow)"></div>
                 <div class="relative">
                     <div class="flex items-start gap-4 mb-4">
-                        {% if alt.image_url %}
+                        {% if alt.local_image %}
+                        <img src="/static/img/{{ alt.local_image }}" alt="{{ alt.name }}"
+                             class="w-14 h-14 object-contain rounded-xl p-2 flex-shrink-0"
+                             style="background:var(--bg-card); border:1px solid var(--border)">
+                        {% elif alt.image_url %}
                         <img src="{{ alt.image_url }}" alt="{{ alt.name }}"
                              class="w-14 h-14 object-contain rounded-xl p-2 flex-shrink-0"
                              style="background:var(--bg-card); border:1px solid var(--border)">
@@ -143,6 +150,10 @@
                     <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">Website</label>
                     {{ form.website }}
                 </div>
+            </div>
+            <div class="mt-4">
+                <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">Or upload local image</label>
+                {{ form.local_image }}
             </div>
             <button type="submit" class="px-8 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold transition shadow-lg shadow-green-900/20">
                 ✅ Submit Alternative

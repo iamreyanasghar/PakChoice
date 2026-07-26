@@ -35,6 +35,9 @@ urlpatterns = [
     path('admin-panel/trash/<str:model_type>/purge-all/', admin_views.admin_trash_purge_all, name='admin_trash_purge_all'),
     path('admin-panel/trash/<str:model_type>/bulk/', admin_views.admin_trash_bulk, name='admin_trash_bulk'),
 
+    # Admin Login (must come before public login to avoid slug conflicts)
+    path('admin', views.admin_login_view, name='admin_login'),
+    
     # Public
     path('', views.home, name='home'),
     path('search/', views.search, name='search'),

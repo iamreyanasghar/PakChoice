@@ -141,7 +141,10 @@
         <div class="space-y-3">
             {% for product in products %}
             <a href="{% url 'product_detail' product.slug %}" class="glass rounded-2xl p-5 flex items-center gap-5 glass-hover transition-all duration-300 card-glow block group">
-                {% if product.logo_url %}
+                {% if product.local_image %}
+                <img src="/static/img/{{ product.local_image }}" alt="{{ product.name }}" class="w-14 h-14 object-contain rounded-xl p-2 flex-shrink-0"
+                     style="background:var(--bg-card); border:1px solid var(--border)">
+                {% elif product.logo_url %}
                 <img src="{{ product.logo_url }}" alt="{{ product.name }}" class="w-14 h-14 object-contain rounded-xl p-2 flex-shrink-0"
                      style="background:var(--bg-card); border:1px solid var(--border)">
                 {% else %}

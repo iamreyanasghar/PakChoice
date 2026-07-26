@@ -48,7 +48,12 @@
                 <dd><a href="{{ alt.website }}" target="_blank" rel="noopener" style="color:#22c55e">{{ alt.website }}</a></dd>
             </div>
             {% endif %}
-            {% if alt.image_url %}
+            {% if alt.local_image %}
+            <div class="col-span-2">
+                <dt class="text-xs uppercase tracking-wider mb-0.5" style="color:var(--text-muted)">Local Image</dt>
+                <dd class="truncate">{{ alt.local_image }}</dd>
+            </div>
+            {% elif alt.image_url %}
             <div class="col-span-2">
                 <dt class="text-xs uppercase tracking-wider mb-0.5" style="color:var(--text-muted)">Image URL</dt>
                 <dd class="truncate">{{ alt.image_url }}</dd>

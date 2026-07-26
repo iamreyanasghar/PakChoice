@@ -1,10 +1,14 @@
 import os
+import uuid
+from urllib.parse import urlparse
+
+import requests
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib.auth import login, logout, update_session_auth_hash, get_user_model
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, Http404
 from django.db.models import Q, F, Count
 from django.db import transaction, IntegrityError
 from django.utils import timezone
@@ -19,6 +23,41 @@ User = get_user_model()
 
 def _staff_required(user):
     return user.is_active and user.is_staff
+
+
+def download_image_from_url(image_url, folder):
+    """
+    Download an image from a URL and save it to static/img/<folder>/.
+    Returns the relative path (e.g. 'boycott/abc123.jpg') or None on failure.
+    """
+    try:
+        parsed = urlparse(image_url)
+        ext = os.path.splitext(parsed.path)[1] or '.jpg'
+        filename = f'{uuid.uuid4().hex}{ext}'
+        save_path = os.path.join('static', 'img', folder, filename)
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        with requests.get(image_url, headers=headers, timeout=15, stream=True) as response:
+            response.raise_for_status()
+            content_type = response.headers.get('Content-Type', '')
+            if not content_type.startswith('image/'):
+                return None
+            content_length = response.headers.get('Content-Length')
+            max_size = 2 * 1024 * 1024  # 2 MB
+            if content_length and int(content_length) > max_size:
+                return None
+            total = 0
+            with open(save_path, 'wb') as destination:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        total += len(chunk)
+                        if total > max_size:
+                            return None
+                        destination.write(chunk)
+        return f'{folder}/{filename}'
+    except Exception:
+        return None
 
 
 def health(request):
@@ -99,7 +138,10 @@ def home(request):
 
 
 def category_detail(request, slug):
-    category = get_object_or_404(Category, slug=slug, is_active=True)
+    try:
+        category = get_object_or_404(Category, slug=slug, is_active=True)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     subcategories = category.subcategories.filter(is_active=True).annotate(
         product_count=Count('products')
     ).prefetch_related('products').all()
@@ -107,8 +149,11 @@ def category_detail(request, slug):
 
 
 def subcategory_detail(request, cat_slug, sub_slug):
-    category = get_object_or_404(Category, slug=cat_slug, is_active=True)
-    subcategory = get_object_or_404(SubCategory, category=category, slug=sub_slug, is_active=True)
+    try:
+        category = get_object_or_404(Category, slug=cat_slug, is_active=True)
+        subcategory = get_object_or_404(SubCategory, category=category, slug=sub_slug, is_active=True)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     products = subcategory.products.filter(verified=True, is_active=True).annotate(
         alternative_count=Count('alternatives')
     ).prefetch_related('alternatives')
@@ -118,7 +163,10 @@ def subcategory_detail(request, cat_slug, sub_slug):
 
 
 def product_detail(request, slug):
-    product = get_object_or_404(Product, slug=slug, is_active=True)
+    try:
+        product = get_object_or_404(Product, slug=slug, is_active=True)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     alternatives = product.alternatives.filter(status='approved', is_active=True)
     user_votes = set()
     if request.user.is_authenticated:
@@ -134,13 +182,29 @@ def product_detail(request, slug):
 
 @require_POST
 def add_alternative(request, slug):
-    product = get_object_or_404(Product, slug=slug)
-    form = AlternativeForm(request.POST)
+    try:
+        product = get_object_or_404(Product, slug=slug)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
+    form = AlternativeForm(request.POST, request.FILES)
     if form.is_valid():
         alt = form.save(commit=False)
         alt.product = product
         alt.added_by = request.user if request.user.is_authenticated else None
         alt.status = 'pending'
+        local_image = request.FILES.get('local_image')
+        if local_image:
+            import os, uuid
+            ext = os.path.splitext(local_image.name)[1]
+            filename = f'{uuid.uuid4().hex}{ext}'
+            save_path = os.path.join('static', 'img', 'alternative', filename)
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            with open(save_path, 'wb+') as destination:
+                for chunk in local_image.chunks():
+                    destination.write(chunk)
+            alt.local_image = f'alternative/{filename}'
+        elif alt.image_url:
+            alt.local_image = download_image_from_url(alt.image_url, 'alternative')
         alt.save()
         messages.success(request, '✅ Alternative submitted! It will appear after admin review.')
     else:
@@ -152,7 +216,10 @@ def add_alternative(request, slug):
 @require_POST
 @rate_limit(key_prefix='upvote', limit=30, period=60)
 def upvote_alternative(request, pk):
-    alt = get_object_or_404(Alternative, pk=pk, status='approved')
+    try:
+        alt = get_object_or_404(Alternative, pk=pk, status='approved')
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     with transaction.atomic():
         alt = Alternative.objects.select_for_update().get(pk=pk)
         voted = False
@@ -287,72 +354,17 @@ def search(request):
 
 
 def register_view(request):
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-    form = RegisterForm(request.POST or None, request.FILES or None)
-    if form.is_valid():
-        user = form.save()
-        user.first_name = form.cleaned_data.get('first_name', '')
-        user.last_name = form.cleaned_data.get('last_name', '')
-        user.save()
-
-        # Save profile data (signal already created the profile)
-        profile = user.profile
-        profile.security_question = form.cleaned_data.get('security_question', '')
-        profile.set_security_answer(form.cleaned_data.get('security_answer', ''))
-        display_name = form.cleaned_data.get('display_name', '').strip()
-        if not display_name:
-            # Auto-generate display name from first + last name
-            first = form.cleaned_data.get('first_name', '').strip()
-            last = form.cleaned_data.get('last_name', '').strip()
-            if first and last:
-                display_name = f"{first} {last}"
-            elif first:
-                display_name = first
-        if display_name:
-            profile.display_name = display_name
-        # Handle avatar upload
-        avatar = form.cleaned_data.get('avatar')
-        if avatar:
-            profile.avatar = avatar
-        profile.save()
-
-        # Log the user in and redirect to dashboard
-        login(request, user)
-        messages.success(request, '✅ Account created successfully! Welcome to BuyPakistani.')
-        return redirect('dashboard')
-
-    return render(request, 'core/auth.html', {'form': form, 'mode': 'register'})
+    return render(request, 'core/temporarily_unavailable.html', {
+        'title': 'Registration Temporarily Unavailable',
+        'message': 'User registration is currently disabled. Please check back later.',
+    }, status=503)
 
 
 def login_view(request):
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-
-    # Only rate limit POST requests (actual login attempts)
-    if request.method == 'POST':
-        from django.core.cache import cache
-        ip_address = request.META.get('REMOTE_ADDR', 'unknown')
-        lockout_key = f"login_lockout_{ip_address}"
-        if cache.get(lockout_key):
-            messages.error(request, 'Too many failed login attempts. Please try again later.')
-            return redirect('home')
-
-    form = LoginForm(request, request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        user = form.get_user()
-        login(request, user)
-        log_security_event('login_success', f'User {user.username} logged in successfully', user=user, request=request)
-        messages.success(request, '✅ Logged in successfully. Welcome back!')
-        next_url = request.POST.get('next') or request.GET.get('next', '')
-        if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
-            return redirect(next_url)
-        return redirect('dashboard')
-    
-    if request.method == 'POST':
-        log_security_event('login_failed', 'Failed login attempt', request=request)
-    
-    return render(request, 'core/auth.html', {'form': form, 'mode': 'login'})
+    return render(request, 'core/temporarily_unavailable.html', {
+        'title': 'Login Temporarily Unavailable',
+        'message': 'User login is currently disabled. Please use the admin login at /admin if you are a staff member.',
+    }, status=503)
 
 
 @require_POST
@@ -361,30 +373,43 @@ def logout_view(request):
     return redirect('home')
 
 
+def admin_login_view(request):
+    """Admin-only login page at /admin."""
+    if request.user.is_authenticated and request.user.is_staff:
+        return redirect('admin_overview')
+    
+    from django.contrib.auth.forms import AuthenticationForm
+    form = AuthenticationForm(request, request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        user = form.get_user()
+        if user.is_staff:
+            login(request, user)
+            messages.success(request, '✅ Admin login successful.')
+            return redirect('admin_overview')
+        else:
+            messages.error(request, '❌ Admin access only. Staff credentials required.')
+    
+    return render(request, 'core/admin_login.html', {'form': form})
+
+
 @login_required
 def dashboard(request):
-    alternatives = Alternative.objects.filter(
-        added_by=request.user
-    ).select_related('product__subcategory__category').order_by('-created_at')
-    votes = Vote.objects.filter(
-        user=request.user
-    ).select_related('alternative__product').order_by('-alternative__created_at')
-    return render(request, 'core/dashboard.html', {
-        'alternatives': alternatives,
-        'votes': votes,
-    })
+    return render(request, 'core/temporarily_unavailable.html', {
+        'title': 'Dashboard Temporarily Unavailable',
+        'message': 'The user dashboard is currently disabled. Please check back later.',
+    }, status=503)
 
 
 @login_required
 def profile_view(request):
     """Display user profile information (read-only)."""
-    profile, _ = UserProfile.objects.get_or_create(user=request.user)
-    return render(request, 'core/profile.html', {
-        'profile': profile,
-    })
+    return render(request, 'core/temporarily_unavailable.html', {
+        'title': 'Profile Temporarily Unavailable',
+        'message': 'User profiles are currently disabled. Please check back later.',
+    }, status=503)
 
 
-@user_passes_test(_staff_required, login_url='/login/')
+@user_passes_test(_staff_required, login_url='/admin')
 def admin_dashboard(request):
     from django.utils import timezone as tz
     from datetime import timedelta
@@ -400,9 +425,12 @@ def admin_dashboard(request):
     return render(request, 'core/admin_dashboard.html', {'pending': pending, 'stats': stats})
 
 
-@user_passes_test(_staff_required, login_url='/login/')
+@user_passes_test(_staff_required, login_url='/admin')
 def moderate_alternative(request, pk):
-    alt = get_object_or_404(Alternative, pk=pk)
+    try:
+        alt = get_object_or_404(Alternative, pk=pk)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     old_status = alt.status
     form = ModerationForm(instance=alt)
 
@@ -425,170 +453,37 @@ def moderate_alternative(request, pk):
 
 @rate_limit(key_prefix='forgot_password', limit=5, period=300)
 def forgot_password_view(request):
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-    
-    form = ForgotPasswordForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        username = form.cleaned_data['username']
-        try:
-            user = User.objects.get(username=username)
-            if not user.profile.security_question:
-                messages.error(request, 'No security question set for this account. Please contact support.')
-                return redirect('forgot_password')
-            request.session['reset_username'] = username
-            return redirect('verify_security')
-        except User.DoesNotExist:
-            messages.error(request, 'No account found with that username.')
-    
-    return render(request, 'core/forgot_password.html', {'form': form})
+    return render(request, 'core/temporarily_unavailable.html', {
+        'title': 'Password Reset Temporarily Unavailable',
+        'message': 'Password reset is currently disabled. Please contact an administrator.',
+    }, status=503)
 
 
 def verify_security_view(request):
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-    
-    username = request.session.get('reset_username')
-    if not username:
-        messages.error(request, 'Please start the password reset process first.')
-        return redirect('forgot_password')
-    
-    try:
-        user = User.objects.get(username=username)
-    except User.DoesNotExist:
-        messages.error(request, 'Invalid session. Please try again.')
-        return redirect('forgot_password')
-    
-    form = VerifySecurityForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        if user.profile.check_security_answer(form.cleaned_data['security_answer']):
-            request.session['security_verified'] = True
-            return redirect('reset_password')
-        else:
-            messages.error(request, 'Incorrect security answer. Please try again.')
-    
-    question_display = dict(UserProfile.SECURITY_QUESTIONS).get(user.profile.security_question, 'Security Question')
-    return render(request, 'core/verify_security.html', {
-        'form': form,
-        'question': question_display,
-    })
+    return render(request, 'core/temporarily_unavailable.html', {
+        'title': 'Password Reset Temporarily Unavailable',
+        'message': 'Password reset is currently disabled. Please contact an administrator.',
+    }, status=503)
 
 
 def reset_password_view(request):
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-    
-    if not request.session.get('security_verified'):
-        messages.error(request, 'Please verify your security question first.')
-        return redirect('forgot_password')
-    
-    form = ResetPasswordForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        username = request.session.get('reset_username')
-        try:
-            user = User.objects.get(username=username)
-            user.set_password(form.cleaned_data['new_password1'])
-            user.save()
-            # Clear session
-            request.session.pop('reset_username', None)
-            request.session.pop('security_verified', None)
-            log_security_event('password_reset', f'Password reset successful for user {user.username}', user=user, request=request)
-            messages.success(request, '✅ Password reset successful! You can now log in with your new password.')
-            return redirect('login')
-        except User.DoesNotExist:
-            messages.error(request, 'Invalid session. Please try again.')
-            return redirect('forgot_password')
-    
-    return render(request, 'core/reset_password.html', {'form': form})
+    return render(request, 'core/temporarily_unavailable.html', {
+        'title': 'Password Reset Temporarily Unavailable',
+        'message': 'Password reset is currently disabled. Please contact an administrator.',
+    }, status=503)
 
 
 @login_required
 def settings_view(request):
-    profile, _ = UserProfile.objects.get_or_create(user=request.user)
-
-    profile_form = ProfileSettingsForm(request.user, instance=profile)
-    avatar_form = AvatarForm(instance=profile)
-    password_form = PasswordChangeForm(request.user)
-
-    if request.method == 'POST':
-        action = request.POST.get('action')
-
-        if action == 'profile':
-            profile_form = ProfileSettingsForm(request.user, request.POST, instance=profile)
-            if profile_form.is_valid():
-                profile_form.save()
-                messages.success(request, '✅ Profile updated successfully.')
-                return redirect('settings')
-
-        elif action == 'avatar':
-            if request.POST.get('remove_avatar'):
-                if profile.avatar:
-                    old_file = profile.avatar.path if hasattr(profile.avatar, 'path') else None
-                    profile.avatar = None
-                    profile.save()
-                    if old_file and os.path.exists(old_file):
-                        os.remove(old_file)
-                    messages.success(request, '✅ Avatar removed successfully.')
-                return redirect('settings')
-            avatar_form = AvatarForm(request.POST, request.FILES, instance=profile)
-            if avatar_form.is_valid():
-                if profile.avatar:
-                    old_file = profile.avatar.path if hasattr(profile.avatar, 'path') else None
-                    avatar_form.save()
-                    if old_file and os.path.exists(old_file):
-                        os.remove(old_file)
-                else:
-                    avatar_form.save()
-                messages.success(request, '✅ Avatar updated successfully.')
-                return redirect('settings')
-
-        elif action == 'password':
-            password_form = PasswordChangeForm(request.user, request.POST)
-            if password_form.is_valid():
-                user = password_form.save()
-                update_session_auth_hash(request, user)
-                messages.success(request, '✅ Password changed successfully.')
-                return redirect('settings')
-
-        elif action == 'security':
-            security_form = SecuritySettingsForm(request.POST, instance=profile)
-            if security_form.is_valid():
-                security_form.save()
-                messages.success(request, '✅ Security settings updated successfully.')
-                return redirect('settings')
-
-    security_form = SecuritySettingsForm(instance=profile)
-    return render(request, 'core/settings.html', {
-        'profile_form': profile_form,
-        'avatar_form': avatar_form,
-        'password_form': password_form,
-        'security_form': security_form,
-        'profile': profile,
-    })
+    return render(request, 'core/temporarily_unavailable.html', {
+        'title': 'Settings Temporarily Unavailable',
+        'message': 'Account settings are currently disabled. Please check back later.',
+    }, status=503)
 
 
 @require_POST
 def delete_account(request):
-    from django.contrib.auth import authenticate
-    
-    user = request.user
-    confirm_password = request.POST.get('confirm_password', '')
-    
-    # Verify password
-    if not confirm_password:
-        log_security_event('account_delete_failed', f'Account deletion attempt without password for user {user.username}', user=user, request=request)
-        messages.error(request, 'Please enter your password to confirm account deletion.')
-        return redirect('settings')
-    
-    authenticated_user = authenticate(request, username=user.username, password=confirm_password)
-    if authenticated_user is None:
-        log_security_event('account_delete_failed', f'Account deletion attempt with wrong password for user {user.username}', user=user, request=request)
-        messages.error(request, 'Incorrect password. Account deletion cancelled.')
-        return redirect('settings')
-    
-    username = user.username
-    logout(request)
-    user.delete()
-    log_security_event('account_deleted', f'Account deleted for user {username}', request=request)
-    messages.success(request, 'Your account has been deleted.')
-    return redirect('home')
+    return render(request, 'core/temporarily_unavailable.html', {
+        'title': 'Account Deletion Temporarily Unavailable',
+        'message': 'Account deletion is currently disabled. Please check back later.',
+    }, status=503)

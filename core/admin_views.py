@@ -6,9 +6,11 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from django.utils import timezone
 from django.core.paginator import Paginator
+from django.http import Http404
 from datetime import timedelta
 from .models import Category, SubCategory, Product, Alternative, UserProfile
 from .admin_forms import CategoryForm, SubCategoryForm, ProductForm, AlternativeForm, AlternativeModerationForm, UserEditForm, UserProfileEditForm
+from .views import download_image_from_url
 
 User = get_user_model()
 
@@ -36,7 +38,7 @@ def _admin_required(user):
 
 # ── Dashboard ──────────────────────────────────────────────
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_overview(request):
     """Admin dashboard overview with stats."""
     from datetime import timedelta
@@ -65,7 +67,7 @@ def admin_overview(request):
 
 # ── Category CRUD ──────────────────────────────────────────
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_category_list(request):
     query = request.GET.get('q', '').strip()
     categories_qs = Category.objects.filter(is_active=True).annotate(
@@ -86,7 +88,7 @@ def admin_category_list(request):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_category_create(request):
     if request.method == 'POST':
         form = CategoryForm(request.POST)
@@ -106,9 +108,12 @@ def admin_category_create(request):
     return render(request, 'core/admin/category_form.html', {'mode': 'create', 'form': form})
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_category_edit(request, pk):
-    category = get_object_or_404(Category, pk=pk)
+    try:
+        category = get_object_or_404(Category, pk=pk)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     if request.method == 'POST':
         form = CategoryForm(request.POST, instance=category)
         if form.is_valid():
@@ -127,9 +132,12 @@ def admin_category_edit(request, pk):
     return render(request, 'core/admin/category_form.html', {'mode': 'edit', 'form': form, 'category': category})
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_category_delete(request, pk):
-    category = get_object_or_404(Category, pk=pk)
+    try:
+        category = get_object_or_404(Category, pk=pk)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     if request.method == 'POST':
         name = category.name
         category.is_active = False
@@ -146,7 +154,7 @@ def admin_category_delete(request, pk):
 
 # ── SubCategory CRUD ───────────────────────────────────────
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_subcategory_list(request):
     query = request.GET.get('q', '').strip()
     subcategories_qs = SubCategory.objects.filter(is_active=True).select_related('category').annotate(
@@ -167,7 +175,7 @@ def admin_subcategory_list(request):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_subcategory_create(request):
     categories = Category.objects.filter(is_active=True).all()
     if request.method == 'POST':
@@ -190,9 +198,12 @@ def admin_subcategory_create(request):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_subcategory_edit(request, pk):
-    subcategory = get_object_or_404(SubCategory, pk=pk)
+    try:
+        subcategory = get_object_or_404(SubCategory, pk=pk)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     categories = Category.objects.filter(is_active=True).all()
     if request.method == 'POST':
         form = SubCategoryForm(request.POST, instance=subcategory)
@@ -214,9 +225,12 @@ def admin_subcategory_edit(request, pk):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_subcategory_delete(request, pk):
-    subcategory = get_object_or_404(SubCategory, pk=pk)
+    try:
+        subcategory = get_object_or_404(SubCategory, pk=pk)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     if request.method == 'POST':
         name = subcategory.name
         subcategory.is_active = False
@@ -233,7 +247,7 @@ def admin_subcategory_delete(request, pk):
 
 # ── Product CRUD ───────────────────────────────────────────
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_product_list(request):
     query = request.GET.get('q', '').strip()
     products_qs = Product.objects.filter(is_active=True).select_related(
@@ -254,16 +268,30 @@ def admin_product_list(request):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_product_create(request):
     subcategories = SubCategory.objects.filter(is_active=True).select_related('category').all()
     if request.method == 'POST':
-        form = ProductForm(request.POST)
+        form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
             if Product.objects.filter(slug=form.cleaned_data['slug']).exists():
                 messages.error(request, 'A product with this slug already exists.')
             else:
-                form.save()
+                product = form.save(commit=False)
+                local_image = request.FILES.get('local_image')
+                if local_image:
+                    import os, uuid
+                    ext = os.path.splitext(local_image.name)[1]
+                    filename = f'{uuid.uuid4().hex}{ext}'
+                    save_path = os.path.join('static', 'img', 'boycott', filename)
+                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                    with open(save_path, 'wb+') as destination:
+                        for chunk in local_image.chunks():
+                            destination.write(chunk)
+                    product.local_image = f'boycott/{filename}'
+                elif product.image_url:
+                    product.local_image = download_image_from_url(product.image_url, 'boycott')
+                product.save()
                 messages.success(request, f'✅ Product "{form.cleaned_data["name"]}" created successfully.')
                 return redirect('admin_product_list')
         else:
@@ -277,17 +305,34 @@ def admin_product_create(request):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_product_edit(request, pk):
-    product = get_object_or_404(Product, pk=pk)
+    try:
+        product = get_object_or_404(Product, pk=pk)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     subcategories = SubCategory.objects.filter(is_active=True).select_related('category').all()
     if request.method == 'POST':
-        form = ProductForm(request.POST, instance=product)
+        form = ProductForm(request.POST, request.FILES, instance=product)
         if form.is_valid():
             if Product.objects.filter(slug=form.cleaned_data['slug']).exclude(pk=pk).exists():
                 messages.error(request, 'A product with this slug already exists.')
             else:
-                form.save()
+                product = form.save(commit=False)
+                local_image = request.FILES.get('local_image')
+                if local_image:
+                    import os, uuid
+                    ext = os.path.splitext(local_image.name)[1]
+                    filename = f'{uuid.uuid4().hex}{ext}'
+                    save_path = os.path.join('static', 'img', 'boycott', filename)
+                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                    with open(save_path, 'wb+') as destination:
+                        for chunk in local_image.chunks():
+                            destination.write(chunk)
+                    product.local_image = f'boycott/{filename}'
+                elif product.image_url:
+                    product.local_image = download_image_from_url(product.image_url, 'boycott')
+                product.save()
                 messages.success(request, f'✅ Product "{form.cleaned_data["name"]}" updated successfully.')
                 return redirect('admin_product_list')
         else:
@@ -301,9 +346,12 @@ def admin_product_edit(request, pk):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_product_delete(request, pk):
-    product = get_object_or_404(Product, pk=pk)
+    try:
+        product = get_object_or_404(Product, pk=pk)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     if request.method == 'POST':
         name = product.name
         product.is_active = False
@@ -320,7 +368,7 @@ def admin_product_delete(request, pk):
 
 # ── Alternative CRUD ───────────────────────────────────────
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_alternative_list(request):
     alt_status = request.GET.get('status', '')
     query = request.GET.get('q', '').strip()
@@ -346,11 +394,11 @@ def admin_alternative_list(request):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_alternative_create(request):
     products = Product.objects.filter(is_active=True, verified=True).select_related('subcategory__category').all()
     if request.method == 'POST':
-        form = AlternativeForm(request.POST)
+        form = AlternativeForm(request.POST, request.FILES)
         if form.is_valid():
             alt = form.save(commit=False)
             # If product was selected via datalist, ensure FK is set
@@ -360,6 +408,19 @@ def admin_alternative_create(request):
                     alt.product = Product.objects.get(pk=product_pk)
                 except Product.DoesNotExist:
                     pass
+            local_image = request.FILES.get('local_image')
+            if local_image:
+                import os, uuid
+                ext = os.path.splitext(local_image.name)[1]
+                filename = f'{uuid.uuid4().hex}{ext}'
+                save_path = os.path.join('static', 'img', 'alternative', filename)
+                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                with open(save_path, 'wb+') as destination:
+                    for chunk in local_image.chunks():
+                        destination.write(chunk)
+                alt.local_image = f'alternative/{filename}'
+            elif alt.image_url:
+                alt.local_image = download_image_from_url(alt.image_url, 'alternative')
             alt.save()
             messages.success(request, f'✅ Alternative "{alt.name}" created successfully.')
             return redirect('admin_alternative_list')
@@ -378,9 +439,12 @@ def admin_alternative_create(request):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_alternative_delete(request, pk):
-    alt = get_object_or_404(Alternative, pk=pk)
+    try:
+        alt = get_object_or_404(Alternative, pk=pk)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     if request.method == 'POST':
         name = alt.name
         alt.is_active = False
@@ -397,7 +461,7 @@ def admin_alternative_delete(request, pk):
 
 # ── User Management ────────────────────────────────────────
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_user_list(request):
     query = request.GET.get('q', '').strip()
     users_qs = User.objects.filter(is_active=True).select_related('profile').annotate(
@@ -421,9 +485,12 @@ def admin_user_list(request):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_user_edit(request, pk):
-    user = get_object_or_404(User, pk=pk)
+    try:
+        user = get_object_or_404(User, pk=pk)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     profile, _ = UserProfile.objects.get_or_create(user=user)
     if request.method == 'POST':
         user_form = UserEditForm(request.POST, instance=user)
@@ -452,9 +519,12 @@ def admin_user_edit(request, pk):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_user_toggle_staff(request, pk):
-    user = get_object_or_404(User, pk=pk)
+    try:
+        user = get_object_or_404(User, pk=pk)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     if request.method == 'POST':
         if user == request.user:
             messages.error(request, 'You cannot change your own staff status.')
@@ -466,9 +536,12 @@ def admin_user_toggle_staff(request, pk):
     return redirect('admin_user_list')
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_user_delete(request, pk):
-    user = get_object_or_404(User, pk=pk)
+    try:
+        user = get_object_or_404(User, pk=pk)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
     if request.method == 'POST':
         if user == request.user:
             messages.error(request, 'You cannot delete your own account.')
@@ -487,7 +560,7 @@ def admin_user_delete(request, pk):
 
 # ── Trash ────────────────────────────────────────────────────
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_trash(request):
     """Trash overview showing counts of deleted items."""
     trash_stats = {
@@ -516,7 +589,7 @@ def admin_trash(request):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_trash_list(request, model_type):
     """Generic trash list view for any model type."""
     if model_type not in TRASH_MODEL_MAP:
@@ -575,7 +648,7 @@ def admin_trash_list(request, model_type):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_trash_restore(request, model_type, pk):
     """Restore an item from trash."""
     if model_type not in TRASH_MODEL_CLASSES:
@@ -583,7 +656,10 @@ def admin_trash_restore(request, model_type, pk):
         return redirect('admin_trash')
 
     model = TRASH_MODEL_CLASSES[model_type]
-    item = get_object_or_404(model, pk=pk, is_active=False)
+    try:
+        item = get_object_or_404(model, pk=pk, is_active=False)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
 
     if request.method == 'POST':
         item.is_active = True
@@ -599,7 +675,7 @@ def admin_trash_restore(request, model_type, pk):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_trash_purge(request, model_type, pk):
     """Permanently delete an item from trash."""
     if model_type not in TRASH_MODEL_CLASSES:
@@ -607,7 +683,10 @@ def admin_trash_purge(request, model_type, pk):
         return redirect('admin_trash')
 
     model = TRASH_MODEL_CLASSES[model_type]
-    item = get_object_or_404(model, pk=pk, is_active=False)
+    try:
+        item = get_object_or_404(model, pk=pk, is_active=False)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
 
     if request.method == 'POST':
         name = item.name if hasattr(item, 'name') else item.username
@@ -621,7 +700,7 @@ def admin_trash_purge(request, model_type, pk):
     })
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_trash_purge_all(request, model_type):
     """Permanently delete all purgeable items (older than 10 days) for a model type."""
     if request.method != 'POST':
@@ -643,7 +722,7 @@ def admin_trash_purge_all(request, model_type):
     return redirect('admin_trash')
 
 
-@user_passes_test(_admin_required, login_url='/login/')
+@user_passes_test(_admin_required, login_url='/admin')
 def admin_trash_bulk(request, model_type):
     """Bulk restore or purge selected trashed items."""
     if request.method != 'POST':

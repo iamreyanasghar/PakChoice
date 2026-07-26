@@ -21,6 +21,8 @@ from .forms import (
     ForgotPasswordForm, VerifySecurityForm, ResetPasswordForm,
     SecuritySettingsForm
 )
+from .views import download_image_from_url
+from unittest.mock import patch, MagicMock
 
 
 # ── Model Tests ──────────────────────────────────────────────
@@ -347,45 +349,13 @@ class AuthViewTests(TestCase):
             password='testpass123'
         )
 
-    def test_register_view_get(self):
+    def test_register_view_unavailable(self):
         response = self.client.get(reverse('register'))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'core/auth.html')
+        self.assertEqual(response.status_code, 503)
 
-    def test_register_view_post_success(self):
-        response = self.client.post(reverse('register'), {
-            'username': 'newuser',
-            'first_name': 'New',
-            'last_name': 'User',
-            'display_name': 'New User',
-            'email': 'new@example.com',
-            'password1': 'newpass123',
-            'password2': 'newpass123',
-            'security_question': 'color',
-            'security_answer': 'blue'
-        })
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(User.objects.filter(username='newuser').exists())
-        self.assertTrue(UserProfile.objects.filter(user__username='newuser').exists())
-
-    def test_login_view_get(self):
+    def test_login_view_unavailable(self):
         response = self.client.get(reverse('login'))
-        self.assertEqual(response.status_code, 200)
-
-    def test_login_view_post_success(self):
-        response = self.client.post(reverse('login'), {
-            'username': 'testuser',
-            'password': 'testpass123'
-        })
-        self.assertEqual(response.status_code, 302)
-
-    def test_login_view_post_failure(self):
-        response = self.client.post(reverse('login'), {
-            'username': 'testuser',
-            'password': 'wrongpass'
-        })
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(response.wsgi_request.user.is_authenticated)
+        self.assertEqual(response.status_code, 503)
 
     def test_logout_view(self):
         self.client.login(username='testuser', password='testpass123')
@@ -421,12 +391,9 @@ class DashboardViewTests(TestCase):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 302)
 
-    def test_dashboard_loads_for_authenticated_user(self):
-        self.client.login(username='testuser', password='testpass123')
+    def test_dashboard_requires_login(self):
         response = self.client.get(reverse('dashboard'))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('alternatives', response.context)
-        self.assertIn('votes', response.context)
+        self.assertEqual(response.status_code, 302)
 
 
 class ProfileViewTests(TestCase):
@@ -439,11 +406,9 @@ class ProfileViewTests(TestCase):
         response = self.client.get(reverse('profile'))
         self.assertEqual(response.status_code, 302)
 
-    def test_profile_loads(self):
-        self.client.login(username='testuser', password='testpass123')
+    def test_profile_requires_login(self):
         response = self.client.get(reverse('profile'))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('profile', response.context)
+        self.assertEqual(response.status_code, 302)
 
 
 class SettingsViewTests(TestCase):
@@ -456,10 +421,9 @@ class SettingsViewTests(TestCase):
         response = self.client.get(reverse('settings'))
         self.assertEqual(response.status_code, 302)
 
-    def test_settings_loads(self):
-        self.client.login(username='testuser', password='testpass123')
+    def test_settings_requires_login(self):
         response = self.client.get(reverse('settings'))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 302)
 
 
 class AddAlternativeViewTests(TestCase):
@@ -704,46 +668,20 @@ class PasswordResetViewTests(TestCase):
         self.user.profile.set_security_answer('blue')
         self.user.profile.save()
 
-    def test_forgot_password_view_get(self):
+    def test_forgot_password_unavailable(self):
         response = self.client.get(reverse('forgot_password'))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 503)
 
-    def test_forgot_password_valid_username(self):
-        response = self.client.post(reverse('forgot_password'), {
-            'username': 'testuser'
-        })
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('verify_security'))
-
-    def test_forgot_password_invalid_username(self):
-        response = self.client.post(reverse('forgot_password'), {
-            'username': 'nonexistent'
-        })
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(
-            self.client.session.get('reset_username')
-        )
-
-    def test_verify_security_view(self):
+    def test_verify_security_unavailable(self):
         session = self.client.session
         session['reset_username'] = 'testuser'
         session.save()
         response = self.client.post(reverse('verify_security'), {
             'security_answer': 'blue'
         })
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('reset_password'))
+        self.assertEqual(response.status_code, 503)
 
-    def test_verify_security_wrong_answer(self):
-        session = self.client.session
-        session['reset_username'] = 'testuser'
-        session.save()
-        response = self.client.post(reverse('verify_security'), {
-            'security_answer': 'red'
-        })
-        self.assertEqual(response.status_code, 200)
-
-    def test_reset_password_view(self):
+    def test_reset_password_unavailable(self):
         session = self.client.session
         session['reset_username'] = 'testuser'
         session['security_verified'] = True
@@ -752,9 +690,7 @@ class PasswordResetViewTests(TestCase):
             'new_password1': 'newpass123',
             'new_password2': 'newpass123'
         })
-        self.assertEqual(response.status_code, 302)
-        self.user.refresh_from_db()
-        self.assertTrue(self.user.check_password('newpass123'))
+        self.assertEqual(response.status_code, 503)
 
 
 class DeleteAccountViewTests(TestCase):
@@ -763,25 +699,10 @@ class DeleteAccountViewTests(TestCase):
             username='testuser', password='testpass123'
         )
 
-    def test_delete_account_requires_login(self):
+    def test_delete_account_unavailable(self):
+        self.client.login(username='testuser', password='testpass123')
         response = self.client.post(reverse('delete_account'))
-        self.assertEqual(response.status_code, 302)
-
-    def test_delete_account_success(self):
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.post(reverse('delete_account'), {
-            'confirm_password': 'testpass123'
-        })
-        self.assertEqual(response.status_code, 302)
-        self.assertFalse(User.objects.filter(username='testuser').exists())
-
-    def test_delete_account_wrong_password(self):
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.post(reverse('delete_account'), {
-            'confirm_password': 'wrongpass'
-        })
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(User.objects.filter(username='testuser').exists())
+        self.assertEqual(response.status_code, 503)
 
 
 # ── Form Tests ───────────────────────────────────────────────
@@ -867,8 +788,8 @@ class AvatarFormTests(TestCase):
         self.assertTrue(form.is_valid() or 'avatar' in form.errors)
 
     def test_file_too_large(self):
-        # Create a file just over 5MB
-        large_content = b'\xff\xd8\xff\xe0' + b'\x00' * (5 * 1024 * 1024 + 1000)
+        # Create a file just over 2MB
+        large_content = b'\xff\xd8\xff\xe0' + b'\x00' * (2 * 1024 * 1024 + 1000)
         large_image = SimpleUploadedFile(
             'test.jpg',
             large_content,
@@ -916,28 +837,14 @@ class RateLimitDecoratorTests(TestCase):
         # Clear any cached rate limit data from other tests
         cache.clear()
         
-        # Test rate limiting via the login view which uses the decorator
-        # Use a unique username to avoid conflicts with other tests
-        unique_user = 'ratelimit_test_unique_user'
-        User.objects.create_user(username=unique_user, password='pass123')
-        
+        # Public login is temporarily unavailable (503), so rate limiting
+        # is not the primary blocker. Verify the view returns 503.
         client = Client()
-        
-        # Make 5 failed login attempts (limit is 5 per 300 seconds)
-        for i in range(5):
-            response = client.post(reverse('login'), {
-                'username': unique_user,
-                'password': 'wrongpass'
-            })
-            self.assertEqual(response.status_code, 200)
-        
-        # 6th attempt should be rate limited
         response = client.post(reverse('login'), {
-            'username': unique_user,
+            'username': 'nonexistent',
             'password': 'wrongpass'
         })
-        # Should redirect with error message
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 503)
 
 
 # ── Integration Tests ────────────────────────────────────────
@@ -958,47 +865,40 @@ class FullWorkflowTests(TestCase):
             reason='Test reason'
         )
 
-    def test_complete_user_workflow(self):
-        # 1. Register
-        response = self.client.post(reverse('register'), {
-            'username': 'newuser',
-            'first_name': 'New',
-            'last_name': 'User',
-            'display_name': 'New User',
-            'email': 'new@example.com',
-            'password1': 'newpass123',
-            'password2': 'newpass123',
-            'security_question': 'color',
-            'security_answer': 'blue'
-        })
-        self.assertEqual(response.status_code, 302)
-        user = User.objects.get(username='newuser')
-
-        # 2. Login
-        self.client.login(username='newuser', password='newpass123')
-
-        # 3. View product
-        response = self.client.get(reverse('product_detail', args=['mcdonalds']))
-        self.assertEqual(response.status_code, 200)
-
-        # 4. Submit alternative
-        response = self.client.post(reverse('add_alternative', args=['mcdonalds']), {
-            'name': 'Local Burger',
-            'brand': 'Local Brand',
-            'description': 'Great alternative',
-            'image_url': '',
-            'website': ''
-        })
-        self.assertEqual(response.status_code, 302)
-        alt = Alternative.objects.get(name='Local Burger')
-        self.assertEqual(alt.status, 'pending')
-        self.assertEqual(alt.added_by, user)
-
-        # 5. Admin approves
+    def test_complete_admin_workflow(self):
+        # 1. Admin creates product
         admin = User.objects.create_user(
             username='admin', password='adminpass', is_staff=True
         )
         self.client.login(username='admin', password='adminpass')
+        response = self.client.post(reverse('admin_product_create'), {
+            'name': 'Test Product',
+            'slug': 'test-product',
+            'brand': 'Test Brand',
+            'country_of_origin': 'Pakistan',
+            'reason': 'Test reason',
+            'subcategory': self.subcategory.pk,
+        })
+        self.assertEqual(response.status_code, 302)
+        product = Product.objects.get(name='Test Product')
+
+        # 2. View product page
+        response = self.client.get(reverse('product_detail', args=[product.slug]))
+        self.assertEqual(response.status_code, 200)
+
+        # 3. Admin adds alternative
+        response = self.client.post(reverse('admin_alternative_create'), {
+            'product': product.pk,
+            'name': 'Local Burger',
+            'brand': 'Local Brand',
+            'description': 'Great alternative',
+            'status': 'approved',
+        })
+        self.assertEqual(response.status_code, 302)
+        alt = Alternative.objects.get(name='Local Burger')
+        self.assertEqual(alt.status, 'approved')
+
+        # 4. Admin moderates (re-approve)
         response = self.client.post(
             reverse('moderate_alternative', args=[alt.pk]),
             {'action': 'approve', 'name': 'Local Burger', 'brand': 'Local Brand'}
@@ -1007,10 +907,157 @@ class FullWorkflowTests(TestCase):
         alt.refresh_from_db()
         self.assertEqual(alt.status, 'approved')
 
-        # 6. Regular user upvotes
-        self.client.login(username='newuser', password='newpass123')
-        response = self.client.post(reverse('upvote', args=[alt.pk]))
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.content)
-        self.assertTrue(data['voted'])
-        self.assertEqual(data['upvotes'], 1)
+
+# ── Image Download Tests ──────────────────────────────────────
+
+class ImageDownloadTests(TestCase):
+    def test_download_image_success(self):
+        """Test that download_image_from_url saves a valid image."""
+        fake_image_data = b'\xff\xd8\xff\xe0\x00\x10JFIF' + b'\x00' * 100
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {
+            'Content-Type': 'image/jpeg',
+            'Content-Length': str(len(fake_image_data))
+        }
+        mock_response.iter_content.return_value = [fake_image_data]
+        mock_response.raise_for_status = MagicMock()
+        mock_response.__enter__ = MagicMock(return_value=mock_response)
+        mock_response.__exit__ = MagicMock(return_value=False)
+
+        with patch('core.views.requests.get', return_value=mock_response):
+            result = download_image_from_url('https://example.com/test.jpg', 'boycott')
+
+        self.assertIsNotNone(result)
+        self.assertTrue(result.startswith('boycott/'))
+        self.assertTrue(result.endswith('.jpg'))
+
+    def test_download_image_rejects_non_image(self):
+        """Test that non-image content types are rejected."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {'Content-Type': 'text/html'}
+        mock_response.raise_for_status = MagicMock()
+        mock_response.__enter__ = MagicMock(return_value=mock_response)
+        mock_response.__exit__ = MagicMock(return_value=False)
+
+        with patch('core.views.requests.get', return_value=mock_response):
+            result = download_image_from_url('https://example.com/test.html', 'boycott')
+
+        self.assertIsNone(result)
+
+    def test_download_image_rejects_too_large(self):
+        """Test that images over 2MB are rejected."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {
+            'Content-Type': 'image/jpeg',
+            'Content-Length': str(3 * 1024 * 1024)  # 3 MB
+        }
+        mock_response.raise_for_status = MagicMock()
+        mock_response.__enter__ = MagicMock(return_value=mock_response)
+        mock_response.__exit__ = MagicMock(return_value=False)
+
+        with patch('core.views.requests.get', return_value=mock_response):
+            result = download_image_from_url('https://example.com/large.jpg', 'boycott')
+
+        self.assertIsNone(result)
+
+    def test_download_image_handles_request_failure(self):
+        """Test that request exceptions return None."""
+        with patch('core.views.requests.get', side_effect=Exception('Network error')):
+            result = download_image_from_url('https://example.com/test.jpg', 'boycott')
+
+        self.assertIsNone(result)
+
+
+# ── Admin Image Upload Tests ──────────────────────────────────
+
+class AdminProductCreateImageTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username='admin', password='adminpass123', is_staff=True
+        )
+        self.category = Category.objects.create(name='Food', slug='food', order=1)
+        self.subcategory = SubCategory.objects.create(
+            category=self.category, name='Fast Food', slug='fast-food'
+        )
+
+    def test_admin_create_product_with_image_url(self):
+        """Test that admin can create a product with an image_url."""
+        self.client.login(username='admin', password='adminpass123')
+        fake_image_data = b'\xff\xd8\xff\xe0\x00\x10JFIF' + b'\x00' * 100
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {
+            'Content-Type': 'image/jpeg',
+            'Content-Length': str(len(fake_image_data))
+        }
+        mock_response.iter_content.return_value = [fake_image_data]
+        mock_response.raise_for_status = MagicMock()
+        mock_response.__enter__ = MagicMock(return_value=mock_response)
+        mock_response.__exit__ = MagicMock(return_value=False)
+
+        with patch('core.views.requests.get', return_value=mock_response):
+            response = self.client.post(reverse('admin_product_create'), {
+                'name': 'Test Product',
+                'slug': 'test-product',
+                'brand': 'Test Brand',
+                'country_of_origin': 'Pakistan',
+                'reason': 'Test reason',
+                'subcategory': self.subcategory.pk,
+                'image_url': 'https://example.com/product.jpg',
+            })
+
+        self.assertEqual(response.status_code, 302)
+        product = Product.objects.get(name='Test Product')
+        self.assertIsNotNone(product.local_image)
+        self.assertTrue(product.local_image.startswith('boycott/'))
+
+
+class AdminAlternativeCreateImageTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username='admin', password='adminpass123', is_staff=True
+        )
+        self.category = Category.objects.create(name='Food', slug='food', order=1)
+        self.subcategory = SubCategory.objects.create(
+            category=self.category, name='Fast Food', slug='fast-food'
+        )
+        self.product = Product.objects.create(
+            subcategory=self.subcategory,
+            name='McDonalds',
+            slug='mcdonalds',
+            brand='McDonalds',
+            reason='Test reason'
+        )
+
+    def test_admin_create_alternative_with_image_url(self):
+        """Test that admin can create an alternative with an image_url."""
+        self.client.login(username='admin', password='adminpass123')
+        fake_image_data = b'\xff\xd8\xff\xe0\x00\x10JFIF' + b'\x00' * 100
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {
+            'Content-Type': 'image/jpeg',
+            'Content-Length': str(len(fake_image_data))
+        }
+        mock_response.iter_content.return_value = [fake_image_data]
+        mock_response.raise_for_status = MagicMock()
+        mock_response.__enter__ = MagicMock(return_value=mock_response)
+        mock_response.__exit__ = MagicMock(return_value=False)
+
+        with patch('core.views.requests.get', return_value=mock_response):
+            response = self.client.post(reverse('admin_alternative_create'), {
+                'product': self.product.pk,
+                'name': 'Local Burger',
+                'brand': 'Local Brand',
+                'description': 'Great alternative',
+                'status': 'approved',
+                'image_url': 'https://example.com/alternative.jpg',
+            })
+
+        self.assertEqual(response.status_code, 302)
+        alternative = Alternative.objects.get(name='Local Burger')
+        self.assertIsNotNone(alternative.local_image)
+        self.assertTrue(alternative.local_image.startswith('alternative/'))

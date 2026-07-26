@@ -87,37 +87,14 @@
 <!-- ── Navbar ─────────────────────────────────────────── -->
 <nav class="nav-blur sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16 gap-4">
+        <div class="flex items-center justify-between h-16 gap-4 relative">
 
             <!-- Logo -->
-            <a href="{% url 'home' %}" class="flex items-center gap-2.5 flex-shrink-0 group">
-                <img src="{% static 'img/logo.png' %}" alt="BuyPakistani" class="h-9 w-9 rounded-xl object-contain" width="36" height="36">
-                <span class="font-black text-xl gradient-text tracking-tight">BuyPakistani</span>
+            <a href="{% url 'home' %}" class="flex items-center flex-shrink-0 group logo-text" style="margin-left:-2px;">
+                <span class="text-2xl font-extrabold tracking-tight">
+                    <span class="logo-buy">buy</span><span class="logo-pakistani">pakistan<span class="i-with-star">ı</span></span><span class="logo-org">.org</span>
+                </span>
             </a>
-
-            <!-- Desktop Search -->
-            <form action="{% url 'search' %}" method="get" class="hidden md:flex flex-1 max-w-lg relative" id="navbarSearchForm">
-                <div class="relative w-full">
-                    <input type="text" name="q" value="{% if request.path != '/search/' %}{{ request.GET.q }}{% endif %}"
-                        placeholder="Search categories, products, brands..."
-                        autocomplete="off"
-                        class="form-input pl-10 pr-4 py-2 text-sm w-full"
-                        id="navbarSearchInput">
-                    <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                    <div id="navbarSearchSpinner" class="absolute right-3 top-1/2 -translate-y-1/2 hidden">
-                        <svg class="w-4 h-4 animate-spin" style="color:var(--text-muted)" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    </div>
-                    <!-- Autocomplete dropdown -->
-                    <div id="navbarAutocomplete" class="hidden absolute z-50 mt-1 w-full rounded-2xl glass shadow-2xl overflow-hidden autocomplete-dropdown">
-                        <div id="navbarAutocompleteList" class="py-2"></div>
-                    </div>
-                </div>
-            </form>
 
             <!-- Right side -->
             <div class="flex items-center gap-2">
@@ -131,8 +108,8 @@
                 <!-- Theme toggle -->
                 <button id="themeToggle" onclick="toggleTheme()" class="theme-toggle" aria-label="Toggle theme">☀️</button>
 
-                {% if user.is_authenticated %}
-                    <!-- Profile dropdown -->
+                {% if user.is_authenticated and user.is_staff %}
+                    <!-- Profile dropdown (staff only) -->
                     <div class="relative" id="profileDropdown">
                         <button onclick="toggleDropdown()" class="flex items-center gap-2 rounded-xl px-2 py-1.5 glass glass-hover transition" aria-label="Account menu">
                             {% if user.profile.avatar %}
@@ -166,15 +143,6 @@
                             </div>
                             <!-- Menu items -->
                             <div class="py-1">
-                                <a href="{% url 'profile' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm transition hover:bg-white/10 hover:text-green-500" style="color:var(--text-secondary)">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                    Profile
-                                </a>
-                                <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm transition hover:bg-white/10 hover:text-green-500" style="color:var(--text-secondary)">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-                                    Dashboard
-                                </a>
-                                {% if user.is_staff %}
                                 <a href="{% url 'admin_overview' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm transition hover:bg-white/10 hover:text-green-500" style="color:var(--text-secondary)">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                                     Admin Panel
@@ -186,7 +154,6 @@
                                     {% if count %}<span class="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-bold">{{ count }}</span>{% endif %}
                                     {% endwith %}
                                 </a>
-                                {% endif %}
                             </div>
                             <div class="py-1" style="border-top:1px solid var(--border)">
                                 <form method="post" action="{% url 'logout' %}">
@@ -199,11 +166,38 @@
                             </div>
                         </div>
                     </div>
-                {% else %}
-                    <a href="{% url 'login' %}" class="px-3 py-1.5 text-sm rounded-xl glass glass-hover transition hover:bg-white/10" style="color:var(--text-secondary)">Login</a>
-                    <a href="{% url 'register' %}" class="px-3 py-1.5 text-sm rounded-xl bg-green-600 hover:bg-green-500 text-white font-medium transition shadow-lg shadow-green-900/30 hover:shadow-green-900/50">Register</a>
+                {% elif user.is_authenticated %}
+                    <!-- Non-staff authenticated users: logout only -->
+                    <form method="post" action="{% url 'logout' %}" class="flex items-center">
+                        {% csrf_token %}
+                        <button type="submit" class="px-3 py-1.5 text-sm rounded-xl glass glass-hover transition hover:bg-white/10" style="color:var(--text-secondary)">Logout</button>
+                    </form>
                 {% endif %}
             </div>
+
+            <!-- Desktop Search - absolutely centered -->
+            <form action="{% url 'search' %}" method="get" class="hidden md:flex absolute left-1/2 -translate-x-1/2 max-w-lg w-full px-4" id="navbarSearchForm">
+                <div class="relative w-full">
+                    <input type="text" name="q" value="{% if request.path != '/search/' %}{{ request.GET.q }}{% endif %}"
+                        placeholder="Search categories, products, brands..."
+                        autocomplete="off"
+                        class="form-input pl-10 pr-4 py-2 text-sm w-full"
+                        id="navbarSearchInput">
+                    <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <div id="navbarSearchSpinner" class="absolute right-3 top-1/2 -translate-y-1/2 hidden">
+                        <svg class="w-4 h-4 animate-spin" style="color:var(--text-muted)" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                    <!-- Autocomplete dropdown -->
+                    <div id="navbarAutocomplete" class="hidden absolute z-50 mt-1 w-full rounded-2xl glass shadow-2xl overflow-hidden autocomplete-dropdown">
+                        <div id="navbarAutocompleteList" class="py-2"></div>
+                    </div>
+                </div>
+            </form>
         </div>
 
         <!-- Mobile search bar -->
@@ -258,19 +252,16 @@
     <div class="max-w-7xl mx-auto px-4 py-10">
         <div class="flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="flex items-center gap-3">
-                <img src="{% static 'img/logo.png' %}" alt="BuyPakistani logo" class="h-8 w-8 rounded-lg object-contain" width="32" height="32">
-                <div>
-                    <p class="font-bold gradient-text">BuyPakistani</p>
-                    <p class="text-xs" style="color:var(--text-muted)">Boycott the Oppressors. Buy Pakistani. 🇵🇰</p>
-                </div>
+                <a href="{% url 'home' %}" class="logo-text" style="margin-left:-2px;">
+                    <span class="text-lg font-extrabold tracking-tight">
+                        <span class="logo-buy">buy</span><span class="logo-pakistani">pakistan<span class="i-with-star">ı</span></span><span class="logo-org">.org</span>
+                    </span>
+                </a>
             </div>
             <p class="text-sm" style="color:var(--text-muted)">Built with ❤️ love for Pakistan — Every purchase is a vote</p>
             <div class="flex gap-4 text-sm" style="color:var(--text-muted)">
                 <a href="{% url 'home' %}" class="hover:text-green-500 transition">Home</a>
                 <a href="{% url 'search' %}" class="hover:text-green-500 transition">Search</a>
-                {% if not user.is_authenticated %}
-                <a href="{% url 'register' %}" class="hover:text-green-500 transition">Join</a>
-                {% endif %}
             </div>
         </div>
     </div>
