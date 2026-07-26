@@ -192,18 +192,7 @@ def add_alternative(request, slug):
         alt.product = product
         alt.added_by = request.user if request.user.is_authenticated else None
         alt.status = 'pending'
-        local_image = request.FILES.get('local_image')
-        if local_image:
-            import os, uuid
-            ext = os.path.splitext(local_image.name)[1]
-            filename = f'{uuid.uuid4().hex}{ext}'
-            save_path = os.path.join('static', 'img', 'alternative', filename)
-            os.makedirs(os.path.dirname(save_path), exist_ok=True)
-            with open(save_path, 'wb+') as destination:
-                for chunk in local_image.chunks():
-                    destination.write(chunk)
-            alt.local_image = f'alternative/{filename}'
-        elif alt.image_url:
+        if alt.image_url:
             alt.local_image = download_image_from_url(alt.image_url, 'alternative')
         alt.save()
         messages.success(request, '✅ Alternative submitted! It will appear after admin review.')

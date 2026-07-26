@@ -27,13 +27,6 @@
             <div><label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Image URL</label><input type="url" name="image_url" value="{{ alternative.image_url|default:'' }}" placeholder="https://example.com/image.jpg" class="form-input"></div>
             <div><label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Website</label><input type="url" name="website" value="{{ alternative.website|default:'' }}" placeholder="https://example.com" class="form-input"></div>
         </div>
-        <div class="mt-4">
-            <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Local Image (upload to static/img/alternative/)</label>
-            <input type="file" name="local_image" accept="image/*" class="form-input">
-            {% if alternative.local_image %}
-            <p class="text-xs mt-1" style="color:var(--text-muted)">Current: {{ alternative.local_image }}</p>
-            {% endif %}
-        </div>
         {% if mode == 'create' %}
         <div>
             <label class="block text-xs uppercase tracking-wider mb-1.5" style="color:var(--text-muted)">Status</label>

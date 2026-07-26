@@ -272,13 +272,9 @@ class SecuritySettingsForm(forms.ModelForm):
 
 
 class AlternativeForm(forms.ModelForm):
-    local_image = forms.ImageField(
-        required=False,
-        widget=forms.FileInput(attrs={'accept': 'image/*', 'class': 'form-input'})
-    )
     class Meta:
         model = Alternative
-        fields = ('name', 'brand', 'description', 'image_url', 'local_image', 'website')
+        fields = ('name', 'brand', 'description', 'image_url', 'website')
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Product name'}),
             'brand': forms.TextInput(attrs={'placeholder': 'Brand name'}),
@@ -294,13 +290,9 @@ class AlternativeForm(forms.ModelForm):
 
 
 class ModerationForm(forms.ModelForm):
-    local_image = forms.ImageField(
-        required=False,
-        widget=forms.FileInput(attrs={'accept': 'image/*', 'class': 'form-input'})
-    )
     class Meta:
         model = Alternative
-        fields = ('name', 'brand', 'description', 'image_url', 'local_image', 'website', 'admin_notes', 'rejection_reason')
+        fields = ('name', 'brand', 'description', 'image_url', 'website', 'admin_notes', 'rejection_reason')
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Alternative name'}),
             'brand': forms.TextInput(attrs={'placeholder': 'Brand name'}),

@@ -278,18 +278,7 @@ def admin_product_create(request):
                 messages.error(request, 'A product with this slug already exists.')
             else:
                 product = form.save(commit=False)
-                local_image = request.FILES.get('local_image')
-                if local_image:
-                    import os, uuid
-                    ext = os.path.splitext(local_image.name)[1]
-                    filename = f'{uuid.uuid4().hex}{ext}'
-                    save_path = os.path.join('static', 'img', 'boycott', filename)
-                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-                    with open(save_path, 'wb+') as destination:
-                        for chunk in local_image.chunks():
-                            destination.write(chunk)
-                    product.local_image = f'boycott/{filename}'
-                elif product.image_url:
+                if product.image_url:
                     product.local_image = download_image_from_url(product.image_url, 'boycott')
                 product.save()
                 messages.success(request, f'✅ Product "{form.cleaned_data["name"]}" created successfully.')
@@ -319,18 +308,7 @@ def admin_product_edit(request, pk):
                 messages.error(request, 'A product with this slug already exists.')
             else:
                 product = form.save(commit=False)
-                local_image = request.FILES.get('local_image')
-                if local_image:
-                    import os, uuid
-                    ext = os.path.splitext(local_image.name)[1]
-                    filename = f'{uuid.uuid4().hex}{ext}'
-                    save_path = os.path.join('static', 'img', 'boycott', filename)
-                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-                    with open(save_path, 'wb+') as destination:
-                        for chunk in local_image.chunks():
-                            destination.write(chunk)
-                    product.local_image = f'boycott/{filename}'
-                elif product.image_url:
+                if product.image_url:
                     product.local_image = download_image_from_url(product.image_url, 'boycott')
                 product.save()
                 messages.success(request, f'✅ Product "{form.cleaned_data["name"]}" updated successfully.')
@@ -408,18 +386,7 @@ def admin_alternative_create(request):
                     alt.product = Product.objects.get(pk=product_pk)
                 except Product.DoesNotExist:
                     pass
-            local_image = request.FILES.get('local_image')
-            if local_image:
-                import os, uuid
-                ext = os.path.splitext(local_image.name)[1]
-                filename = f'{uuid.uuid4().hex}{ext}'
-                save_path = os.path.join('static', 'img', 'alternative', filename)
-                os.makedirs(os.path.dirname(save_path), exist_ok=True)
-                with open(save_path, 'wb+') as destination:
-                    for chunk in local_image.chunks():
-                        destination.write(chunk)
-                alt.local_image = f'alternative/{filename}'
-            elif alt.image_url:
+            if alt.image_url:
                 alt.local_image = download_image_from_url(alt.image_url, 'alternative')
             alt.save()
             messages.success(request, f'✅ Alternative "{alt.name}" created successfully.')

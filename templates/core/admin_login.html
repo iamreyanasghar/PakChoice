@@ -1,68 +1,9 @@
 {% extends 'core/base.html' %}
+{% load widget_tweaks static %}
 {% block title %}Admin Login — BuyPakistani{% endblock %}
 
 {% block extra_css %}
-<style>
-.admin-login-wrapper {
-  min-height: 80vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1rem;
-}
-.admin-login-card {
-  width: 100%;
-  max-width: 400px;
-}
-.admin-login-card .glass {
-  padding: 2.5rem;
-}
-.admin-login-card h1 {
-  text-align: center;
-  margin-bottom: 0.5rem;
-}
-.admin-login-card .subtitle {
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 0.875rem;
-  margin-bottom: 2rem;
-}
-.admin-login-card .form-input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
-  background: var(--input-bg);
-  border: 1px solid var(--input-border);
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  transition: border-color 0.2s, background 0.3s;
-  outline: none;
-}
-.admin-login-card .form-input:focus {
-  border-color: #22c55e;
-}
-.admin-login-card .btn-submit {
-  width: 100%;
-  padding: 0.875rem 1.5rem;
-  border-radius: 0.75rem;
-  background: #22c55e;
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.875rem;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(34,197,94,0.3);
-}
-.admin-login-card .btn-submit:hover {
-  background: #16a34a;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(34,197,94,0.4);
-}
-.admin-login-card .btn-submit:active {
-  transform: translateY(0);
-}
-</style>
+<link rel="stylesheet" href="{% static 'css/admin-login.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -88,13 +29,19 @@
 
             <form method="post" class="space-y-5">
                 {% csrf_token %}
-                <div>
-                    <label class="block text-xs uppercase tracking-wider mb-2 font-semibold" style="color:var(--text-muted)">Username</label>
-                    {{ form.username }}
+                <div class="form-group">
+                    <label for="{{ form.username.id_for_label }}">Username</label>
+                    {{ form.username|add_class:"form-input" }}
+                    {% if form.username.errors %}
+                    <p class="field-error">{{ form.username.errors.0 }}</p>
+                    {% endif %}
                 </div>
-                <div>
-                    <label class="block text-xs uppercase tracking-wider mb-2 font-semibold" style="color:var(--text-muted)">Password</label>
-                    {{ form.password }}
+                <div class="form-group">
+                    <label for="{{ form.password.id_for_label }}">Password</label>
+                    {{ form.password|add_class:"form-input" }}
+                    {% if form.password.errors %}
+                    <p class="field-error">{{ form.password.errors.0 }}</p>
+                    {% endif %}
                 </div>
                 <button type="submit" class="btn-submit">
                     Sign In

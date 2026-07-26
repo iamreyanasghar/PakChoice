@@ -32,13 +32,9 @@ class SubCategoryForm(forms.ModelForm):
 
 
 class ProductForm(forms.ModelForm):
-    local_image = forms.ImageField(
-        required=False,
-        widget=forms.FileInput(attrs={'accept': 'image/*', 'class': 'form-input'})
-    )
     class Meta:
         model = Product
-        fields = ['subcategory', 'name', 'slug', 'brand', 'country_of_origin', 'reason', 'image_url', 'logo_url', 'local_image', 'verified']
+        fields = ['subcategory', 'name', 'slug', 'brand', 'country_of_origin', 'reason', 'image_url', 'logo_url', 'verified']
         widgets = {
             'subcategory': forms.Select(attrs={'class': 'form-input'}),
             'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Product name'}),
@@ -53,13 +49,9 @@ class ProductForm(forms.ModelForm):
 
 
 class AlternativeForm(forms.ModelForm):
-    local_image = forms.ImageField(
-        required=False,
-        widget=forms.FileInput(attrs={'accept': 'image/*', 'class': 'form-input'})
-    )
     class Meta:
         model = Alternative
-        fields = ['product', 'name', 'brand', 'description', 'image_url', 'local_image', 'website', 'status']
+        fields = ['product', 'name', 'brand', 'description', 'image_url', 'website', 'status']
         widgets = {
             'product': forms.Select(attrs={'class': 'form-input'}),
             'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Alternative name'}),
@@ -72,13 +64,9 @@ class AlternativeForm(forms.ModelForm):
 
 
 class AlternativeModerationForm(forms.ModelForm):
-    local_image = forms.ImageField(
-        required=False,
-        widget=forms.FileInput(attrs={'accept': 'image/*', 'class': 'form-input'})
-    )
     class Meta:
         model = Alternative
-        fields = ['name', 'brand', 'description', 'image_url', 'local_image', 'website', 'admin_notes', 'rejection_reason']
+        fields = ['name', 'brand', 'description', 'image_url', 'website', 'admin_notes', 'rejection_reason']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Alternative name'}),
             'brand': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Brand name'}),
