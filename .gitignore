@@ -23,8 +23,8 @@ db.sqlite3-journal
 /collected_static/
 
 # Static files - ignore user-uploaded images, keep logo
-/static/img/users/
-/static/img/media/
+/static/img/
+media/
 
 # Database
 *.db
