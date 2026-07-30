@@ -70,6 +70,10 @@ htmlcov/
 # Data files (fixtures, seed data)
 data.json
 
+# Node.js
+node_modules/
+theme/static_src/node_modules/
+
 # Docker
 docker-compose.override.yml
 *.pid

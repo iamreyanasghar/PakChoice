@@ -16,15 +16,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # - default-libmysqlclient-dev: for PyMySQL/MySQL client
 # - pkg-config: for building some packages
 # - libjpeg62-turbo-dev, zlib1g-dev: for Pillow image processing
-# - nodejs, npm: for building Tailwind CSS
+# - curl: for downloading Node.js
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     default-libmysqlclient-dev \
     pkg-config \
     libjpeg62-turbo-dev \
     zlib1g-dev \
-    nodejs \
-    npm \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -37,9 +39,9 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt gunicorn
 
-# Install Node.js dependencies and build Tailwind CSS
-COPY package.json tailwind.config.js postcss.config.js ./
-RUN npm install && npm run build-css
+# Install Node.js dependencies and build Tailwind CSS via django-tailwind
+COPY theme/ theme/
+RUN npm install --prefix theme/static_src && python manage.py tailwind build
 
 # Copy project files
 COPY . .

@@ -1,0 +1,13 @@
+{
+  "name": "buypakistani-theme",
+  "version": "1.0.0",
+  "description": "Tailwind CSS theme for BuyPakistani",
+  "scripts": {
+    "build": "tailwindcss -i ./input.css -o ../../static/css/tailwind-build.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.41"
+  }
+}
