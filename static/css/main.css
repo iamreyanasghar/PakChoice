@@ -63,6 +63,22 @@ body {
   transition: background 0.3s, color 0.3s;
 }
 
+/* ---------- Links ---------- */
+a {
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+/* Green hover for simple text links only (not buttons) */
+a:not([class*="bg-"]):not(.glass):not([class*="glass-"]):hover {
+  color: #22c55e;
+}
+
+html.light a:not([class*="bg-"]):not(.glass):not([class*="glass-"]):hover {
+  color: #15803d;
+}
+
 /* ---------- Glass Cards ---------- */
 .glass {
   background: var(--bg-card);

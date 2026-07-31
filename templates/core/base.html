@@ -83,7 +83,7 @@
         <div class="flex items-center justify-between h-16 gap-4 relative">
 
             <!-- Logo -->
-            <a href="{% url 'home' %}" class="flex items-center flex-shrink-0 group logo-text" style="margin-left:-2px;">
+            <a href="{% url 'home' %}" class="flex items-center flex-shrink-0 group logo-text" style="margin-left:-50px;">
                 <span class="text-2xl font-extrabold tracking-tight">
                     <span class="logo-buy">buy</span><span class="logo-pakistani">pakistan<span class="i-with-star">ı</span></span><span class="logo-org">.org</span>
                 </span>
@@ -91,13 +91,6 @@
 
             <!-- Right side -->
             <div class="flex items-center gap-2">
-                <!-- Mobile search toggle -->
-                <button id="mobileSearchBtn" class="md:hidden theme-toggle" aria-label="Search">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                </button>
-
                 <!-- Theme toggle -->
                 <button id="themeToggle" onclick="toggleTheme()" class="theme-toggle" aria-label="Toggle theme">☀️</button>
 
@@ -175,7 +168,8 @@
                         placeholder="Search categories, products, brands..."
                         autocomplete="off"
                         class="form-input pl-10 pr-4 py-2 text-sm w-full"
-                        id="navbarSearchInput">
+                        id="navbarSearchInput"
+                        style="padding-left: 2.5rem; padding-right: 1rem; padding-top: 0.5rem; padding-bottom: 0.5rem;">
                     <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
@@ -194,14 +188,15 @@
         </div>
 
         <!-- Mobile search bar -->
-        <div id="mobileSearchBar" class="hidden pb-3 md:hidden">
+        <div id="mobileSearchBar" class="pb-3 md:hidden">
             <form action="{% url 'search' %}" method="get" class="relative" id="mobileSearchForm">
                 <div class="relative">
                     <input type="text" name="q" value="{{ request.GET.q }}"
                         placeholder="Search categories, products, brands..."
                         autocomplete="off"
                         class="form-input pl-10 pr-4 py-2.5 text-sm w-full"
-                        id="mobileSearchInput">
+                        id="mobileSearchInput"
+                        style="padding-left: 2.5rem; padding-right: 1rem; padding-top: 0.625rem; padding-bottom: 0.625rem;">
                     <svg class="absolute left-3 top-3 w-4 h-4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
