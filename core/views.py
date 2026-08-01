@@ -34,7 +34,8 @@ def download_image_from_url(image_url, folder):
         parsed = urlparse(image_url)
         ext = os.path.splitext(parsed.path)[1] or '.jpg'
         filename = f'{uuid.uuid4().hex}{ext}'
-        save_path = os.path.join('static', 'img', folder, filename)
+        from django.conf import settings
+        save_path = os.path.join(settings.BASE_DIR, 'static', 'img', folder, filename)
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
         headers = {'User-Agent': 'Mozilla/5.0'}
@@ -53,6 +54,8 @@ def download_image_from_url(image_url, folder):
                     if chunk:
                         total += len(chunk)
                         if total > max_size:
+                            destination.close()
+                            os.remove(save_path)
                             return None
                         destination.write(chunk)
         return f'{folder}/{filename}'
@@ -109,18 +112,19 @@ def sitemap(request):
             'lastmod': product.updated_at.isoformat() if product.updated_at else timezone.now().isoformat(),
         })
     
+    from django.utils.html import escape
     xml = ['<?xml version="1.0" encoding="UTF-8"?>']
     xml.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
     for url in urls:
         xml.append('  <url>')
-        xml.append(f'    <loc>{url["loc"]}</loc>')
+        xml.append(f'    <loc>{escape(url["loc"])}</loc>')
         if 'lastmod' in url:
-            xml.append(f'    <lastmod>{url["lastmod"]}</lastmod>')
-        xml.append(f'    <changefreq>{url["changefreq"]}</changefreq>')
-        xml.append(f'    <priority>{url["priority"]}</priority>')
+            xml.append(f'    <lastmod>{escape(url["lastmod"])}</lastmod>')
+        xml.append(f'    <changefreq>{escape(url["changefreq"])}</changefreq>')
+        xml.append(f'    <priority>{escape(url["priority"])}</priority>')
         xml.append('  </url>')
     xml.append('</urlset>')
-    
+
     return HttpResponse('\n'.join(xml), content_type='application/xml')
 
 
@@ -362,22 +366,25 @@ def logout_view(request):
     return redirect('home')
 
 
+@rate_limit(key_prefix='admin_login', limit=5, period=300)
 def admin_login_view(request):
     """Admin-only login page at /admin."""
     if request.user.is_authenticated and request.user.is_staff:
         return redirect('admin_overview')
-    
+
     from django.contrib.auth.forms import AuthenticationForm
     form = AuthenticationForm(request, request.POST or None)
     if request.method == 'POST' and form.is_valid():
         user = form.get_user()
         if user.is_staff:
             login(request, user)
+            log_security_event('admin_login', f'Admin login successful', user=user, request=request)
             messages.success(request, '✅ Admin login successful.')
             return redirect('admin_overview')
         else:
+            log_security_event('admin_login_denied', f'Non-staff login attempt', request=request)
             messages.error(request, '❌ Admin access only. Staff credentials required.')
-    
+
     return render(request, 'core/admin_login.html', {'form': form})
 
 

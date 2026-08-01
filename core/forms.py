@@ -46,6 +46,16 @@ class RegisterForm(UserCreationForm):
         self.fields['password2'].help_text = None
         self.fields['avatar'].help_text = None
 
+    def save(self, commit=True):
+        user = super().save(commit=commit)
+        if commit and hasattr(user, 'profile'):
+            raw_answer = self.cleaned_data.get('security_answer', '')
+            if raw_answer:
+                user.profile.security_question = self.cleaned_data.get('security_question', '')
+                user.profile.set_security_answer(raw_answer)
+                user.profile.save()
+        return user
+
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(
@@ -137,11 +147,17 @@ class AvatarForm(forms.ModelForm):
             if ext not in allowed_extensions:
                 raise forms.ValidationError(f'Unsupported file extension. Allowed: {", ".join(allowed_extensions)}')
 
-            # Validate content type (seek to beginning to ensure imghdr reads correctly)
-            import imghdr
+            # Validate content type using magic bytes
             avatar.seek(0)
-            file_type = imghdr.what(avatar)
-            if file_type not in ['jpeg', 'png', 'gif', 'webp']:
+            header = avatar.read(12)
+            avatar.seek(0)
+            valid_signatures = [
+                b'\xff\xd8\xff',           # JPEG
+                b'\x89PNG\r\n\x1a\n',      # PNG
+                b'GIF87a', b'GIF89a',      # GIF
+                b'RIFF',                   # WEBP (RIFF....WEBP)
+            ]
+            if not any(header.startswith(sig) for sig in valid_signatures):
                 raise forms.ValidationError('Invalid image file. Please upload a valid image.')
 
         return avatar

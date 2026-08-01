@@ -78,6 +78,12 @@ function initAutocomplete(inputId, dropdownId, listId, spinnerId, formId) {
   let debounceTimer = null;
   let currentRequest = null;
 
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
   function showSuggestions(suggestions) {
     if (!suggestions || suggestions.length === 0) {
       hideAutocomplete();
@@ -85,14 +91,22 @@ function initAutocomplete(inputId, dropdownId, listId, spinnerId, formId) {
     }
 
     const q = input.value.trim();
-    list.innerHTML = suggestions.map((s, i) => {
+    list.innerHTML = '';
+    suggestions.forEach((s, i) => {
       const icon = i === 0 ? '🔍' : '📁';
-      const highlighted = q ? s.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'), '<strong style="color:#22c55e">$1</strong>') : s;
-      return `<a href="${form ? form.action : '/search/'}?q=${encodeURIComponent(s)}" class="flex items-center gap-3 px-4 py-3 text-sm transition hover:bg-white/5" style="color:var(--text-primary)">
-        <span class="text-lg">${icon}</span>
-        <span>${highlighted}</span>
-      </a>`;
-    }).join('');
+      const safeS = escapeHtml(s);
+      const safeQ = q ? escapeHtml(q) : '';
+      const highlighted = safeQ
+        ? safeS.replace(new RegExp(`(${safeQ.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'), '<strong style="color:#22c55e">$1</strong>')
+        : safeS;
+
+      const a = document.createElement('a');
+      a.href = (form ? form.action : '/search/') + '?q=' + encodeURIComponent(s);
+      a.className = 'flex items-center gap-3 px-4 py-3 text-sm transition hover:bg-white/5';
+      a.style.color = 'var(--text-primary)';
+      a.innerHTML = `<span class="text-lg">${icon}</span><span>${highlighted}</span>`;
+      list.appendChild(a);
+    });
 
     dropdown.classList.remove('hidden');
   }
