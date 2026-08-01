@@ -24,7 +24,7 @@ db.sqlite3-journal
 
 # Static files - ignore user-uploaded images, keep logo
 /static/img/
-media/*
+media/
 
 # Database
 *.db
