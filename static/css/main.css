@@ -64,18 +64,18 @@ body {
 }
 
 /* ---------- Links ---------- */
-a {
+body a {
   color: var(--text-primary);
   text-decoration: none;
   transition: color 0.2s;
 }
 
 /* Green hover for simple text links only (not buttons) */
-a:not([class*="bg-"]):not(.glass):not([class*="glass-"]):hover {
+body a:not([class*="bg-"]):not(.glass):not([class*="glass-"]):hover {
   color: #22c55e;
 }
 
-html.light a:not([class*="bg-"]):not(.glass):not([class*="glass-"]):hover {
+html.light body a:not([class*="bg-"]):not(.glass):not([class*="glass-"]):hover {
   color: #15803d;
 }
 
