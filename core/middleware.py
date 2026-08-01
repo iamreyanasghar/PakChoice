@@ -12,10 +12,14 @@ class CacheControlMiddleware(MiddlewareMixin):
     Add cache headers for static files and other optimizations.
     """
     def process_response(self, request, response):
-        # Cache static files for 1 year (immutable)
+        # Cache static files aggressively only in production (DEBUG=False)
         if request.path.startswith('/static/'):
-            response['Cache-Control'] = 'public, max-age=31536000, immutable'
-            response['Expires'] = time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time() + 31536000))
+            if not settings.DEBUG:
+                response['Cache-Control'] = 'public, max-age=31536000, immutable'
+                response['Expires'] = time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time() + 31536000))
+            else:
+                response['Cache-Control'] = 'public, max-age=0, must-revalidate'
+                response['Expires'] = time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(0))
         
         # Cache media files (user avatars) for 1 day
         elif request.path.startswith('/media/'):
