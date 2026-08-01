@@ -15,8 +15,14 @@ class CacheControlMiddleware(MiddlewareMixin):
         # Cache static files aggressively only in production (DEBUG=False)
         if request.path.startswith('/static/'):
             if not settings.DEBUG:
-                response['Cache-Control'] = 'public, max-age=31536000, immutable'
-                response['Expires'] = time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time() + 31536000))
+                import re
+                # Only cache immutably if the filename contains a content hash (e.g. main.abc12345.css)
+                if re.search(r'\.[a-f0-9]{8,12}\.', request.path):
+                    response['Cache-Control'] = 'public, max-age=31536000, immutable'
+                    response['Expires'] = time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time() + 31536000))
+                else:
+                    response['Cache-Control'] = 'public, max-age=0, must-revalidate'
+                    response['Expires'] = time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(0))
             else:
                 response['Cache-Control'] = 'public, max-age=0, must-revalidate'
                 response['Expires'] = time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(0))
