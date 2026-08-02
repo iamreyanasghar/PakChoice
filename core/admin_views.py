@@ -638,6 +638,7 @@ def admin_trash_restore(request, model_type, pk):
 
     return render(request, 'core/admin/trash_restore_confirm.html', {
         'item': item,
+        'item_name': item.name if hasattr(item, 'name') else item.username,
         'model_type': model_type,
     })
 
@@ -663,6 +664,7 @@ def admin_trash_purge(request, model_type, pk):
 
     return render(request, 'core/admin/trash_purge_confirm.html', {
         'item': item,
+        'item_name': item.name if hasattr(item, 'name') else item.username,
         'model_type': model_type,
     })
 

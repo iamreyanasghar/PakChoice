@@ -224,21 +224,30 @@
     let currentRequest = null;
 
     function showSuggestions(suggestions) {
-        if (!suggestions || suggestions.length === 0) {
-            hideAutocomplete();
-            return;
-        }
-
+        if (!suggestions || suggestions.length === 0) { hideAutocomplete(); return; }
         const q = searchInput.value.trim();
-        autocompleteList.innerHTML = suggestions.map((s, i) => {
-            const icon = i === 0 ? '🔍' : '📁';
-            const highlighted = q ? s.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'), '<strong style="color:#22c55e">$1</strong>') : s;
-            return `<a href="${searchForm ? searchForm.action : '/search/'}?q=${encodeURIComponent(s)}" class="flex items-center gap-3 px-4 py-3 text-sm transition hover:bg-white/5" style="color:var(--text-primary)">
-                <span class="text-lg">${icon}</span>
-                <span>${highlighted}</span>
-            </a>`;
-        }).join('');
-
+        const base = searchForm ? searchForm.action : '/search/';
+        autocompleteList.innerHTML = '';
+        suggestions.forEach((s, i) => {
+            const a = document.createElement('a');
+            a.href = base + '?q=' + encodeURIComponent(s);
+            a.className = 'flex items-center gap-3 px-4 py-3 text-sm transition hover:bg-white/5';
+            a.style.color = 'var(--text-primary)';
+            const icon = document.createElement('span');
+            icon.className = 'text-lg';
+            icon.textContent = i === 0 ? '🔍' : '📁';
+            const label = document.createElement('span');
+            if (q) {
+                const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+                const parts = s.split(re);
+                parts.forEach(p => {
+                    if (re.test(p)) { const b = document.createElement('strong'); b.style.color = '#22c55e'; b.textContent = p; label.appendChild(b); }
+                    else { label.appendChild(document.createTextNode(p)); }
+                });
+            } else { label.textContent = s; }
+            a.appendChild(icon); a.appendChild(label);
+            autocompleteList.appendChild(a);
+        });
         autocompleteDropdown.classList.remove('hidden');
     }
 

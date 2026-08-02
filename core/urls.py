@@ -3,7 +3,7 @@ from . import views
 from . import admin_views
 
 urlpatterns = [
-    path('health/', views.health, name='health'),
+    path('_health/', views.health, name='health'),
     path('sitemap.xml', views.sitemap, name='sitemap'),
     # ── Admin Panel (must come BEFORE slug catch-all) ────
     path('admin-panel/', admin_views.admin_overview, name='admin_overview'),

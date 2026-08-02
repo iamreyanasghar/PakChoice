@@ -438,3 +438,92 @@ html.light .logo-text .logo-pakistani {
 html.light .logo-text .logo-org {
   color: #64748b;
 }
+
+/* ---------- Mobile Fixes ---------- */
+@media (max-width: 640px) {
+
+  /* Fix logo margin */
+  .logo-text { margin-left: 0 !important; }
+
+  /* Hero: reduce vertical padding and font sizes */
+  .hero-glow .py-20 { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+
+  h1.text-5xl,
+  .text-5xl { font-size: 2rem !important; line-height: 1.15; }
+
+  .text-6xl,
+  .sm\:text-6xl { font-size: 2rem !important; }
+
+  .text-xl { font-size: 0.95rem !important; }
+
+  /* Hero buttons: full width */
+  .flex.flex-col.gap-4 > a {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* Stats cards: tighter padding and smaller text */
+  .grid.grid-cols-3 .glass { padding: 0.625rem 0.375rem; }
+  .grid.grid-cols-3 .text-3xl { font-size: 1.25rem !important; }
+  .grid.grid-cols-3 .text-sm { font-size: 0.65rem !important; }
+
+  /* Reduce section padding */
+  .py-16 { padding-top: 2rem; padding-bottom: 2rem; }
+  .py-12 { padding-top: 1.75rem; padding-bottom: 1.75rem; }
+
+  /* How it works: tighter padding */
+  .gradient-border.rounded-3xl { padding: 1.5rem 1rem; }
+
+  /* Cards: reduce padding */
+  .glass.rounded-2xl.p-6 { padding: 1rem; }
+  .glass.rounded-3xl.p-8 { padding: 1.25rem; }
+
+  /* Product hero: stack image + info vertically and center image */
+  .glass.rounded-3xl .flex-shrink-0 {
+    display: flex;
+    justify-content: center;
+  }
+
+  h1.text-4xl { font-size: 1.6rem !important; }
+
+  /* Search page: stack input and button */
+  #searchForm .flex.gap-3 { flex-direction: column; }
+  #searchForm button[type="submit"] { width: 100%; }
+
+  /* Search tabs: horizontally scrollable */
+  .w-fit.flex-wrap {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .tab-btn { white-space: nowrap; flex-shrink: 0; }
+
+  /* Section headings */
+  .text-3xl { font-size: 1.5rem !important; }
+  .text-2xl { font-size: 1.25rem !important; }
+
+  /* Footer: center text */
+  footer .max-w-7xl > div { text-align: center; }
+
+  /* Product hero: center image when stacked */
+  .glass.rounded-3xl .flex-shrink-0 { margin: 0 auto; }
+
+  /* Product/category large headings */
+  h1.text-4xl { font-size: 1.6rem !important; }
+  .text-xl.mb-4 { font-size: 0.95rem !important; }
+
+  /* Product hero card: reduce padding */
+  .glass.rounded-3xl.p-8 { padding: 1.25rem !important; }
+
+  /* Category header icon: shrink on very small screens */
+  .w-20.h-20 { width: 3.5rem !important; height: 3.5rem !important; font-size: 1.75rem !important; }
+
+  /* Suggest form: full-width submit button */
+  form .px-8.py-3 { width: 100%; text-align: center; }
+
+  /* Vote row: wrap on tiny screens */
+  .flex.items-center.justify-between { flex-wrap: wrap; gap: 0.5rem; }
+}

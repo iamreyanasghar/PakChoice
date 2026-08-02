@@ -11,7 +11,7 @@
                 <p class="text-sm mb-6" style="color:var(--text-muted)">Are you sure you want to restore this item from trash? It will become visible again.</p>
 
                 <div class="rounded-xl p-4 mb-6" style="background:var(--border)">
-                    <p class="font-medium">{{ item.name|default:item.username }}</p>
+                    <p class="font-medium">{{ item_name }}</p>
                     <p class="text-xs mt-1" style="color:var(--text-muted)">Type: {{ model_type|title }}</p>
                     <p class="text-xs" style="color:var(--text-muted)">Deleted: {{ item.deleted_at|date:"M d, Y H:i" }}</p>
                 </div>
