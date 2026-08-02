@@ -121,7 +121,11 @@
     <!-- Add Alternative -->
     <div class="glass rounded-3xl p-8">
         <h2 class="text-xl font-bold mb-1">💡 Suggest an Alternative</h2>
-        <p class="text-sm mb-6" style="color:var(--text-muted)">Know a great Pakistani product? Help the community.</p>
+        <p class="text-sm mb-4" style="color:var(--text-muted)">Know a great Pakistani product? Help the community.</p>
+        <p class="text-xs mb-6" style="color:var(--text-muted)">
+            Can't find the boycott product you're looking for?
+            <a href="{% url 'suggest_product' %}" style="color:#22c55e">Suggest a new boycott product + alternative →</a>
+        </p>
 
         <form method="post" action="{% url 'add_alternative' product.slug %}" class="space-y-4">
             {% csrf_token %}

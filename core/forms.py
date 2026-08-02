@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordChangeForm as DjangoPasswordChangeForm
 from django.contrib.auth import get_user_model
 User = get_user_model()
-from .models import Alternative, UserProfile
+from .models import Alternative, UserProfile, ProductSuggestion
 
 
 class RegisterForm(UserCreationForm):
@@ -285,6 +285,32 @@ class SecuritySettingsForm(forms.ModelForm):
         if commit:
             profile.save()
         return profile
+
+
+class ProductSuggestionForm(forms.ModelForm):
+    class Meta:
+        model = ProductSuggestion
+        fields = ('product_name', 'product_brand', 'product_reason', 'product_country', 'subcategory', 'alt_name', 'alt_brand', 'alt_description', 'alt_website', 'submitter_name')
+        widgets = {
+            'product_name': forms.TextInput(attrs={'placeholder': 'e.g. Milo'}),
+            'product_brand': forms.TextInput(attrs={'placeholder': 'e.g. Nestlé'}),
+            'product_reason': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Why should this brand be boycotted?'}),
+            'product_country': forms.TextInput(attrs={'placeholder': 'e.g. Switzerland'}),
+            'alt_name': forms.TextInput(attrs={'placeholder': 'e.g. Milo by Shan'}),
+            'alt_brand': forms.TextInput(attrs={'placeholder': 'Pakistani brand name'}),
+            'alt_description': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Why is this a good alternative?'}),
+            'alt_website': forms.URLInput(attrs={'placeholder': 'https://...'}),
+            'submitter_name': forms.TextInput(attrs={'placeholder': 'Your name (optional)'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import SubCategory
+        self.fields['subcategory'].queryset = SubCategory.objects.filter(is_active=True).select_related('category').order_by('category__name', 'name')
+        self.fields['subcategory'].required = False
+        self.fields['subcategory'].empty_label = 'Select a subcategory (optional)'
+        for field in self.fields.values():
+            field.widget.attrs['class'] = 'form-input'
 
 
 class AlternativeForm(forms.ModelForm):

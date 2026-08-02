@@ -16,8 +16,8 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from .decorators import rate_limit
 from .security_logger import log_security_event
-from .models import Category, SubCategory, Product, Alternative, Vote, UserProfile
-from .forms import RegisterForm, LoginForm, AlternativeForm, AvatarForm, ProfileSettingsForm, PasswordChangeForm, ModerationForm, ForgotPasswordForm, VerifySecurityForm, ResetPasswordForm, SecuritySettingsForm
+from .models import Category, SubCategory, Product, Alternative, Vote, UserProfile, ProductSuggestion
+from .forms import RegisterForm, LoginForm, AlternativeForm, AvatarForm, ProfileSettingsForm, PasswordChangeForm, ModerationForm, ForgotPasswordForm, VerifySecurityForm, ResetPasswordForm, SecuritySettingsForm, ProductSuggestionForm
 
 User = get_user_model()
 
@@ -182,6 +182,18 @@ def product_detail(request, slug):
         'product': product, 'alternatives': alternatives,
         'form': form, 'user_votes': user_votes,
     })
+
+
+def suggest_product(request):
+    form = ProductSuggestionForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        suggestion = form.save(commit=False)
+        if request.user.is_authenticated:
+            suggestion.submitted_by = request.user
+        suggestion.save()
+        messages.success(request, '✅ Suggestion submitted! Our team will review it shortly.')
+        return redirect('suggest_product')
+    return render(request, 'core/suggest_product.html', {'form': form})
 
 
 @require_POST
@@ -418,7 +430,18 @@ def admin_dashboard(request):
         'needs_changes': Alternative.objects.filter(status='needs_changes').count(),
         'total': Alternative.objects.count(),
     }
-    return render(request, 'core/admin_dashboard.html', {'pending': pending, 'stats': stats})
+    pending_suggestions = ProductSuggestion.objects.filter(status='pending').select_related('subcategory__category', 'submitted_by').order_by('created_at')
+    suggestion_counts = {
+        'pending': ProductSuggestion.objects.filter(status='pending').count(),
+        'approved': ProductSuggestion.objects.filter(status='approved').count(),
+        'rejected': ProductSuggestion.objects.filter(status='rejected').count(),
+    }
+    return render(request, 'core/admin_dashboard.html', {
+        'pending': pending,
+        'stats': stats,
+        'pending_suggestions': pending_suggestions,
+        'suggestion_counts': suggestion_counts,
+    })
 
 
 @user_passes_test(_staff_required, login_url='/admin')

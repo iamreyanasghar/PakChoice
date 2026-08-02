@@ -1,0 +1,111 @@
+{% extends 'core/base.html' %}
+{% block title %}Suggest a Boycott Product — BuyPakistani{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <nav class="breadcrumb flex items-center gap-2 text-sm mb-10 flex-wrap">
+        <a href="{% url 'home' %}">Home</a><span>›</span>
+        <span class="current">Suggest a Product</span>
+    </nav>
+
+    <div class="mb-10">
+        <h1 class="text-3xl font-black mb-3">💡 Suggest a Boycott Product</h1>
+        <p class="text-sm leading-relaxed" style="color:var(--text-muted)">
+            Know a brand that should be boycotted and a Pakistani alternative for it?
+            Fill in both parts below — our team will review and publish it.
+        </p>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <!-- Part 1 -->
+        <div class="glass rounded-2xl overflow-hidden">
+            <div class="px-6 py-4 flex items-center gap-3" style="border-bottom:1px solid var(--border); background:var(--tag-red-bg)">
+                <h2 class="font-bold">The Boycott Product</h2>
+                <span class="text-lg ml-auto">🚫</span>
+            </div>
+            <div class="p-6 space-y-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider mb-2 font-medium" style="color:var(--text-muted)">Product Name *</label>
+                        {{ form.product_name }}
+                        {% if form.product_name.errors %}<p class="tag-red text-xs mt-1.5 px-2 py-1 rounded">{{ form.product_name.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider mb-2 font-medium" style="color:var(--text-muted)">Brand *</label>
+                        {{ form.product_brand }}
+                        {% if form.product_brand.errors %}<p class="tag-red text-xs mt-1.5 px-2 py-1 rounded">{{ form.product_brand.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider mb-2 font-medium" style="color:var(--text-muted)">Country of Origin</label>
+                        {{ form.product_country }}
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider mb-2 font-medium" style="color:var(--text-muted)">Category</label>
+                        {{ form.subcategory }}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs uppercase tracking-wider mb-2 font-medium" style="color:var(--text-muted)">Why Boycott? *</label>
+                    {{ form.product_reason }}
+                    {% if form.product_reason.errors %}<p class="tag-red text-xs mt-1.5 px-2 py-1 rounded">{{ form.product_reason.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Part 2 -->
+        <div class="glass rounded-2xl overflow-hidden" style="margin-top:2rem">
+            <div class="px-6 py-4 flex items-center gap-3" style="border-bottom:1px solid var(--border); background:var(--tag-green-bg)">
+                <h2 class="font-bold">The Pakistani Alternative</h2>
+                <span class="text-lg ml-auto">🇵🇰</span>
+            </div>
+            <div class="p-6 space-y-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider mb-2 font-medium" style="color:var(--text-muted)">Alternative Name *</label>
+                        {{ form.alt_name }}
+                        {% if form.alt_name.errors %}<p class="tag-red text-xs mt-1.5 px-2 py-1 rounded">{{ form.alt_name.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider mb-2 font-medium" style="color:var(--text-muted)">Brand *</label>
+                        {{ form.alt_brand }}
+                        {% if form.alt_brand.errors %}<p class="tag-red text-xs mt-1.5 px-2 py-1 rounded">{{ form.alt_brand.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs uppercase tracking-wider mb-2 font-medium" style="color:var(--text-muted)">Why is it a good alternative?</label>
+                    {{ form.alt_description }}
+                </div>
+
+                <div>
+                    <label class="block text-xs uppercase tracking-wider mb-2 font-medium" style="color:var(--text-muted)">Website</label>
+                    {{ form.alt_website }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Submitter -->
+        <div class="glass rounded-2xl p-6" style="margin-top:2rem">
+            <label class="block text-xs uppercase tracking-wider mb-2 font-medium" style="color:var(--text-muted)">Your Name <span class="normal-case font-normal">(optional)</span></label>
+            {{ form.submitter_name }}
+            <p class="text-xs mt-2" style="color:var(--text-muted)">Leave blank to submit anonymously.</p>
+            <div style="margin-top:1.5rem; border-top:1px solid var(--border); padding-top:1.5rem;">
+                <button type="submit" class="w-full py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold transition shadow-lg shadow-green-900/20">
+                    ✅ Submit Suggestion
+                </button>
+            </div>
+        </div>
+
+        <div style="margin-top:2rem; display:flex; justify-content:center;">
+        </div>
+    </form>
+
+</div>
+{% endblock %}

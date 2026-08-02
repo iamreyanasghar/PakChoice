@@ -5,34 +5,33 @@
 
     if (!productInput || !dropdown || !productPk) return;
 
-    let products = [];
-    try {
-        products = JSON.parse(productInput.dataset.products || '[]');
-    } catch (e) {
-        products = [];
-    }
+    const products = window._productsData || [];
 
     function renderDropdown(filterText) {
-        const q = (filterText || productInput.value).toLowerCase();
+        const q = (filterText || '').toLowerCase();
         const filtered = q ? products.filter(p => p.text.toLowerCase().includes(q)) : products;
+
+        dropdown.innerHTML = '';
 
         if (filtered.length === 0) {
             dropdown.classList.add('hidden');
             return;
         }
 
-        dropdown.innerHTML = filtered.map(p =>
-            `<div class="px-4 py-2.5 cursor-pointer transition hover:bg-white/10 text-sm" style="color:var(--text-primary)" data-pk="${p.pk}" data-text="${p.text.replace(/"/g, '"')}">${p.text}</div>`
-        ).join('');
-        dropdown.classList.remove('hidden');
-
-        dropdown.querySelectorAll('div[data-pk]').forEach(item => {
+        filtered.forEach(p => {
+            const item = document.createElement('div');
+            item.className = 'px-4 py-2.5 cursor-pointer transition hover:bg-white/10 text-sm';
+            item.style.color = 'var(--text-primary)';
+            item.textContent = p.text;
             item.addEventListener('click', function() {
-                productInput.value = this.dataset.text;
-                productPk.value = this.dataset.pk;
+                productInput.value = p.text;
+                productPk.value = p.pk;
                 dropdown.classList.add('hidden');
             });
+            dropdown.appendChild(item);
         });
+
+        dropdown.classList.remove('hidden');
     }
 
     productInput.addEventListener('input', function() {
@@ -50,8 +49,6 @@
     });
 
     productInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            dropdown.classList.add('hidden');
-        }
+        if (e.key === 'Escape') dropdown.classList.add('hidden');
     });
 })();

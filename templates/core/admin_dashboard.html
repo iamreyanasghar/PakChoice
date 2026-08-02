@@ -40,7 +40,7 @@
     </div>
 
     <!-- Pending queue -->
-    <h2 class="text-xl font-bold mb-4">⏳ Pending Review ({{ pending|length }})</h2>
+    <h2 class="text-xl font-bold mb-4">⏳ Pending Alternatives ({{ pending|length }})</h2>
 
     {% if pending %}
     <div class="space-y-4">
@@ -71,6 +71,39 @@
     <div class="glass rounded-2xl p-12 text-center">
         <p class="text-4xl mb-3">✅</p>
         <p class="font-medium" style="color:var(--text-secondary)">All caught up! No pending submissions.</p>
+    </div>
+    {% endif %}
+
+    <!-- Pending suggestions -->
+    <h2 class="text-xl font-bold mt-10 mb-4">💡 Pending Product Suggestions ({{ suggestion_counts.pending }})</h2>
+
+    {% if pending_suggestions %}
+    <div class="space-y-4">
+        {% for s in pending_suggestions %}
+        <div class="glass rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                    <span class="tag-red text-xs px-2 py-0.5 rounded-full">🚫 {{ s.product_name }}</span>
+                    <span style="color:var(--text-muted)">→</span>
+                    <span class="tag-green text-xs px-2 py-0.5 rounded-full">🇵🇰 {{ s.alt_name }}</span>
+                </div>
+                <p class="text-sm" style="color:var(--text-muted)">
+                    {{ s.product_brand }} · {{ s.subcategory|default:"No category" }}
+                    · by {{ s.submitted_by.username|default:s.submitter_name|default:"Anonymous" }}
+                    · {{ s.created_at|timesince }} ago
+                </p>
+            </div>
+            <a href="{% url 'admin_suggestion_moderate' s.pk %}"
+               class="flex-shrink-0 px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition text-center">
+                Review →
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="glass rounded-2xl p-12 text-center">
+        <p class="text-4xl mb-3">✅</p>
+        <p class="font-medium" style="color:var(--text-secondary)">No pending product suggestions.</p>
     </div>
     {% endif %}
         </div>

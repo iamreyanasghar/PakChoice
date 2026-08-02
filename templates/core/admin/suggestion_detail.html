@@ -1,0 +1,146 @@
+{% extends 'core/base.html' %}
+{% block title %}Review Suggestion — Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+        {% include 'core/admin/_nav.html' with active='moderation' %}
+        <div class="flex-1 min-w-0">
+
+            <!-- Header -->
+            <div class="flex items-center gap-3 mb-8">
+                <a href="{% url 'admin_dashboard' %}" class="text-sm glass px-3 py-1.5 rounded-lg glass-hover transition" style="color:var(--text-secondary)">← Back to Moderation</a>
+                <span class="text-xs px-2.5 py-1 rounded-full
+                    {% if suggestion.status == 'pending' %}glass{% elif suggestion.status == 'approved' %}tag-green{% else %}tag-red{% endif %}">
+                    {{ suggestion.get_status_display }}
+                </span>
+            </div>
+
+            <div class="space-y-5">
+
+                <!-- Submitter info -->
+                <div class="glass rounded-2xl px-6 py-4 flex items-center gap-6 flex-wrap text-sm">
+                    <div class="flex items-center gap-2">
+                        <span style="color:var(--text-muted)">Submitted by</span>
+                        <strong>{{ suggestion.submitted_by.username|default:suggestion.submitter_name|default:"Anonymous" }}</strong>
+                    </div>
+                    <div class="flex items-center gap-2" style="color:var(--text-muted)">
+                        <span>🕐</span>
+                        <span>{{ suggestion.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    {% if suggestion.subcategory %}
+                    <div class="flex items-center gap-2" style="color:var(--text-muted)">
+                        <span>📂</span>
+                        <span>{{ suggestion.subcategory }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Boycott product -->
+                <div class="glass rounded-2xl overflow-hidden">
+                    <div class="px-6 py-4 flex items-center gap-3" style="border-bottom:1px solid var(--border); background:var(--tag-red-bg)">
+                        <span class="tag-red text-xs px-2.5 py-1 rounded-full font-bold">Part 1</span>
+                        <h2 class="font-bold">Boycott Product</h2>
+                        <span class="text-lg ml-auto">🚫</span>
+                    </div>
+                    <div class="p-6">
+                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                            <div>
+                                <dt class="text-xs uppercase tracking-wider mb-1" style="color:var(--text-muted)">Product Name</dt>
+                                <dd class="font-semibold text-base">{{ suggestion.product_name }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs uppercase tracking-wider mb-1" style="color:var(--text-muted)">Brand</dt>
+                                <dd class="font-medium">{{ suggestion.product_brand }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs uppercase tracking-wider mb-1" style="color:var(--text-muted)">Country of Origin</dt>
+                                <dd>{{ suggestion.product_country|default:"—" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs uppercase tracking-wider mb-1" style="color:var(--text-muted)">Category</dt>
+                                <dd>{{ suggestion.subcategory|default:"—" }}</dd>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <dt class="text-xs uppercase tracking-wider mb-1" style="color:var(--text-muted)">Why Boycott?</dt>
+                                <dd class="leading-relaxed" style="color:var(--text-secondary)">{{ suggestion.product_reason }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Arrow -->
+                <div></div>
+
+                <!-- Alternative -->
+                <div class="glass rounded-2xl overflow-hidden">
+                    <div class="px-6 py-4 flex items-center gap-3" style="border-bottom:1px solid var(--border); background:var(--tag-green-bg)">
+                        <span class="tag-green text-xs px-2.5 py-1 rounded-full font-bold">Part 2</span>
+                        <h2 class="font-bold">Pakistani Alternative</h2>
+                        <span class="text-lg ml-auto">🇵🇰</span>
+                    </div>
+                    <div class="p-6">
+                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                            <div>
+                                <dt class="text-xs uppercase tracking-wider mb-1" style="color:var(--text-muted)">Name</dt>
+                                <dd class="font-semibold text-base">{{ suggestion.alt_name }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs uppercase tracking-wider mb-1" style="color:var(--text-muted)">Brand</dt>
+                                <dd class="font-medium">{{ suggestion.alt_brand }}</dd>
+                            </div>
+                            {% if suggestion.alt_website %}
+                            <div class="sm:col-span-2">
+                                <dt class="text-xs uppercase tracking-wider mb-1" style="color:var(--text-muted)">Website</dt>
+                                <dd><a href="{{ suggestion.alt_website }}" target="_blank" rel="noopener" style="color:#22c55e">{{ suggestion.alt_website }}</a></dd>
+                            </div>
+                            {% endif %}
+                            {% if suggestion.alt_description %}
+                            <div class="sm:col-span-2">
+                                <dt class="text-xs uppercase tracking-wider mb-1" style="color:var(--text-muted)">Description</dt>
+                                <dd class="leading-relaxed" style="color:var(--text-secondary)">{{ suggestion.alt_description }}</dd>
+                            </div>
+                            {% endif %}
+                        </dl>
+                    </div>
+                </div>
+
+                {% if suggestion.status == 'pending' %}
+                <!-- Action form -->
+                <div class="glass rounded-2xl overflow-hidden">
+                    <div class="px-6 py-4" style="border-bottom:1px solid var(--border)">
+                        <h2 class="font-bold text-sm uppercase tracking-wider" style="color:var(--text-muted)">Admin Decision</h2>
+                    </div>
+                    <form method="post" class="p-6 space-y-5">
+                        {% csrf_token %}
+                        <div>
+                            <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">Admin Notes <span class="normal-case font-normal">(internal, not shown to user)</span></label>
+                            <textarea name="admin_notes" rows="2" class="form-input" placeholder="Optional internal notes...">{{ suggestion.admin_notes }}</textarea>
+                        </div>
+                        <div class="flex gap-3 flex-wrap pt-1">
+                            <button type="submit" name="action" value="approve"
+                                class="px-6 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition">
+                                ✅ Approve & Publish
+                            </button>
+                            <button type="submit" name="action" value="reject"
+                                class="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition">
+                                ❌ Reject
+                            </button>
+                        </div>
+                        <p class="text-xs" style="color:var(--text-muted)">Approving will create the boycott product and the alternative and make them live immediately.</p>
+                    </form>
+                </div>
+                {% else %}
+                <!-- Already reviewed -->
+                <div class="glass rounded-2xl px-6 py-4 text-sm flex items-center gap-4 flex-wrap" style="color:var(--text-muted)">
+                    <span>Reviewed by <strong style="color:var(--text-secondary)">{{ suggestion.reviewed_by.username|default:"—" }}</strong></span>
+                    <span>{{ suggestion.reviewed_at|date:"M d, Y H:i" }}</span>
+                    {% if suggestion.admin_notes %}<span>· {{ suggestion.admin_notes }}</span>{% endif %}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

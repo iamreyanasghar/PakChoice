@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.http import Http404
 from datetime import timedelta
-from .models import Category, SubCategory, Product, Alternative, UserProfile
+from .models import Category, SubCategory, Product, Alternative, UserProfile, ProductSuggestion
 from .admin_forms import CategoryForm, SubCategoryForm, ProductForm, AlternativeForm, AlternativeModerationForm, UserEditForm, UserProfileEditForm
 from .views import download_image_from_url
 
@@ -379,13 +379,12 @@ def admin_alternative_create(request):
         form = AlternativeForm(request.POST, request.FILES)
         if form.is_valid():
             alt = form.save(commit=False)
-            # If product was selected via datalist, ensure FK is set
             product_pk = request.POST.get('product_pk')
-            if product_pk and not alt.product_id:
-                try:
-                    alt.product = Product.objects.get(pk=product_pk)
-                except Product.DoesNotExist:
-                    pass
+            try:
+                alt.product = Product.objects.get(pk=product_pk)
+            except (Product.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'Please select a valid boycott product.')
+                return redirect('admin_alternative_create')
             if alt.image_url:
                 alt.local_image = download_image_from_url(alt.image_url, 'alternative')
             alt.save()
@@ -730,3 +729,82 @@ def admin_trash_bulk(request, model_type):
 
     return redirect('admin_trash_list', model_type=model_type)
 
+
+
+# ── Product Suggestions ────────────────────────────────────
+
+@user_passes_test(_admin_required, login_url='/admin')
+def admin_suggestion_list(request):
+    status_filter = request.GET.get('status', 'pending')
+    qs = ProductSuggestion.objects.select_related('subcategory__category', 'submitted_by', 'reviewed_by')
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    paginator = Paginator(qs, 20)
+    suggestions = paginator.get_page(request.GET.get('page'))
+    counts = {
+        'pending': ProductSuggestion.objects.filter(status='pending').count(),
+        'approved': ProductSuggestion.objects.filter(status='approved').count(),
+        'rejected': ProductSuggestion.objects.filter(status='rejected').count(),
+    }
+    return render(request, 'core/admin/suggestion_list.html', {
+        'suggestions': suggestions,
+        'current_status': status_filter,
+        'counts': counts,
+    })
+
+
+@user_passes_test(_admin_required, login_url='/admin')
+def admin_suggestion_moderate(request, pk):
+    try:
+        suggestion = get_object_or_404(ProductSuggestion, pk=pk)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        suggestion.admin_notes = request.POST.get('admin_notes', '')
+        suggestion.reviewed_by = request.user
+        suggestion.reviewed_at = timezone.now()
+
+        if action == 'approve':
+            # Create the boycott product and the alternative atomically
+            with transaction.atomic():
+                from django.utils.text import slugify
+                base_slug = slugify(suggestion.product_name)
+                slug = base_slug
+                counter = 1
+                while Product.objects.filter(slug=slug).exists():
+                    slug = f'{base_slug}-{counter}'
+                    counter += 1
+
+                product = Product.objects.create(
+                    name=suggestion.product_name,
+                    slug=slug,
+                    brand=suggestion.product_brand,
+                    reason=suggestion.product_reason,
+                    country_of_origin=suggestion.product_country,
+                    subcategory=suggestion.subcategory,
+                    verified=True,
+                    is_active=True,
+                )
+                Alternative.objects.create(
+                    product=product,
+                    name=suggestion.alt_name,
+                    brand=suggestion.alt_brand,
+                    description=suggestion.alt_description,
+                    website=suggestion.alt_website,
+                    added_by=suggestion.submitted_by,
+                    status='approved',
+                )
+                suggestion.status = 'approved'
+                suggestion.save()
+            messages.success(request, f'✅ Approved — "{suggestion.product_name}" and its alternative are now live.')
+
+        elif action == 'reject':
+            suggestion.status = 'rejected'
+            suggestion.save()
+            messages.success(request, f'❌ Suggestion rejected.')
+
+        return redirect('admin_dashboard')
+
+    return render(request, 'core/admin/suggestion_detail.html', {'suggestion': suggestion})

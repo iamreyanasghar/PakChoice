@@ -58,6 +58,11 @@ urlpatterns = [
     path('verify-security/', views.verify_security_view, name='verify_security'),
     path('reset-password/', views.reset_password_view, name='reset_password'),
 
+    # Suggestions
+    path('suggest/', views.suggest_product, name='suggest_product'),
+    path('admin-panel/suggestions/', admin_views.admin_suggestion_list, name='admin_suggestion_list'),
+    path('admin-panel/suggestions/<int:pk>/', admin_views.admin_suggestion_moderate, name='admin_suggestion_moderate'),
+
     # Moderation
     path('admin-panel/moderation/', views.admin_dashboard, name='admin_dashboard'),
     path('admin-panel/moderation/<int:pk>/', views.moderate_alternative, name='moderate_alternative'),

@@ -9,15 +9,20 @@
         <span class="current">{{ subcategory.name }}</span>
     </nav>
 
-    <div class="flex items-center gap-4 mb-10">
-        <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
-             style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border)">
-            {{ subcategory.icon }}
+    <div class="flex items-center justify-between gap-4 mb-10 flex-wrap">
+        <div class="flex items-center gap-4">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
+                 style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border)">
+                {{ subcategory.icon }}
+            </div>
+            <div>
+                <h1 class="text-3xl font-black">{{ subcategory.name }}</h1>
+                <p class="text-sm mt-0.5" style="color:var(--text-muted)">{{ products|length }} boycott products</p>
+            </div>
         </div>
-        <div>
-            <h1 class="text-3xl font-black">{{ subcategory.name }}</h1>
-            <p class="text-sm mt-0.5" style="color:var(--text-muted)">{{ products|length }} boycott products</p>
-        </div>
+        <a href="{% url 'suggest_product' %}" class="px-4 py-2.5 rounded-xl glass glass-hover text-sm font-medium transition flex items-center gap-2" style="color:#22c55e">
+            💡 Suggest a Product
+        </a>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
