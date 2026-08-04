@@ -11,10 +11,16 @@
     </nav>
 
     <!-- Product Hero -->
-    <div class="glass rounded-3xl p-8 mb-10 relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"
-             style="background:var(--red-glow)"></div>
-        <div class="relative flex flex-col sm:flex-row gap-8">
+    <div class="relative mb-10">
+        <div class="glass rounded-3xl p-8 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none z-0"
+                 style="background:var(--red-glow)"></div>
+            <button onclick="openReport('product', {{ product.id }}, null)"
+                    class="absolute z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:opacity-100 opacity-40"
+                    style="top:1rem;right:1rem;background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.25); color:#f87171">
+                🚩 Report
+            </button>
+            <div class="relative flex flex-col sm:flex-row gap-8">
             <div class="flex-shrink-0">
                 {% if product.local_image %}
                 <img src="/static/img/{{ product.local_image }}" alt="{{ product.name }}"
@@ -60,21 +66,21 @@
                         {% if alt.local_image %}
                         <img src="/static/img/{{ alt.local_image }}" alt="{{ alt.name }}"
                              class="w-14 h-14 object-contain rounded-xl p-2 flex-shrink-0"
-                             style="background:var(--bg-card); border:1px solid var(--border)">
+                             style="background:var(--bg-card); border:1px solid var(--border); margin-top:25px">
                         {% elif alt.image_url %}
                         <img src="{{ alt.image_url }}" alt="{{ alt.name }}"
                              class="w-14 h-14 object-contain rounded-xl p-2 flex-shrink-0"
-                             style="background:var(--bg-card); border:1px solid var(--border)">
+                             style="background:var(--bg-card); border:1px solid var(--border); margin-top:25px">
                         {% else %}
                         <div class="w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
-                             style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border)">🇵🇰</div>
+                             style="background:var(--tag-green-bg); border:1px solid var(--tag-green-border); margin-top:25px">🇵🇰</div>
                         {% endif %}
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <h3 class="font-bold text-lg">{{ alt.name }}</h3>
+                                <h3 class="font-bold text-lg !mb-0 !leading-none">{{ alt.name }}</h3>
                                 <span class="tag-green text-xs px-2 py-0.5 rounded-full">Pakistani</span>
                             </div>
-                            <p class="text-sm" style="color:var(--text-secondary)">{{ alt.brand }}</p>
+                            <p class="text-sm !mt-0" style="color:var(--text-secondary); margin-top:-4px">{{ alt.brand }}</p>
                         </div>
                     </div>
                     {% if alt.description %}
@@ -104,6 +110,11 @@
                             </svg>
                         </a>
                         {% endif %}
+                        <button onclick="openReport('alternative', {{ product.id }}, {{ alt.id }})"
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:opacity-100 opacity-40"
+                                style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.25); color:#f87171; position:relative; top:2px">
+                            🚩 Report
+                        </button>
                     </div>
                 </div>
             </div>
@@ -161,6 +172,38 @@
         </form>
     </div>
 </div>
+
+<!-- Report Modal -->
+<div id="report-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.6);display:none!important">
+    <div class="glass rounded-2xl p-6 w-full max-w-md">
+        <h3 class="font-bold text-lg mb-4">🚩 Report an Issue</h3>
+        <div id="report-success" class="hidden tag-green text-sm px-3 py-2 rounded-lg mb-4">✅ Report submitted. Thank you!</div>
+        <div id="report-error" class="hidden tag-red text-sm px-3 py-2 rounded-lg mb-4"></div>
+        <form id="report-form">
+            {% csrf_token %}
+            <input type="hidden" id="report-product-id" name="product_id">
+            <input type="hidden" id="report-alternative-id" name="alternative_id">
+            <div class="mb-4">
+                <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">Reason *</label>
+                <select name="reason" id="report-reason" class="form-input w-full">
+                    <option value="incorrect_info">Incorrect Information</option>
+                    <option value="not_pakistani">Not a Pakistani Product</option>
+                    <option value="duplicate">Duplicate Entry</option>
+                    <option value="inappropriate">Inappropriate Content</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">Details (optional)</label>
+                <textarea name="details" id="report-details" rows="3" class="form-input w-full" placeholder="Describe the issue..."></textarea>
+            </div>
+            <div class="flex gap-3 justify-end">
+                <button type="button" onclick="closeReport()" class="px-4 py-2 glass rounded-xl text-sm font-semibold text-white transition">Cancel</button>
+                <button type="submit" class="px-4 py-2 glass rounded-xl text-sm font-semibold text-white transition">🚩 Submit Report</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -186,5 +229,37 @@ async function vote(altId, btn) {
         }
     }
 }
+
+const reportModal = document.getElementById('report-modal');
+function openReport(type, productId, altId) {
+    document.getElementById('report-product-id').value = type === 'product' ? productId : '';
+    document.getElementById('report-alternative-id').value = altId || '';
+    document.getElementById('report-success').classList.add('hidden');
+    document.getElementById('report-error').classList.add('hidden');
+    document.getElementById('report-details').value = '';
+    reportModal.style.display = 'flex';
+}
+function closeReport() { reportModal.style.display = 'none'; }
+reportModal.addEventListener('click', e => { if (e.target === reportModal) closeReport(); });
+document.getElementById('report-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const fd = new FormData(this);
+    const res = await fetch('{% url "report_item" %}', {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'},
+        body: fd,
+        credentials: 'same-origin'
+    });
+    const data = await res.json();
+    if (data.ok) {
+        document.getElementById('report-success').classList.remove('hidden');
+        document.getElementById('report-error').classList.add('hidden');
+        setTimeout(closeReport, 1500);
+    } else {
+        const errEl = document.getElementById('report-error');
+        errEl.textContent = data.error || 'Something went wrong.';
+        errEl.classList.remove('hidden');
+    }
+});
 </script>
 {% endblock %}

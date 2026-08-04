@@ -16,7 +16,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from .decorators import rate_limit
 from .security_logger import log_security_event
-from .models import Category, SubCategory, Product, Alternative, Vote, UserProfile, ProductSuggestion
+from .models import Category, SubCategory, Product, Alternative, Vote, UserProfile, ProductSuggestion, Report
 from .forms import RegisterForm, LoginForm, AlternativeForm, AvatarForm, ProfileSettingsForm, PasswordChangeForm, ModerationForm, ForgotPasswordForm, VerifySecurityForm, ResetPasswordForm, SecuritySettingsForm, ProductSuggestionForm
 
 User = get_user_model()
@@ -429,6 +429,9 @@ def admin_dashboard(request):
         'rejected_week': Alternative.objects.filter(status='rejected', reviewed_at__gte=week_ago).count(),
         'needs_changes': Alternative.objects.filter(status='needs_changes').count(),
         'total': Alternative.objects.count(),
+        'total_products': Product.objects.filter(is_active=True).count(),
+        'total_categories': Category.objects.filter(is_active=True).count(),
+        'total_subcategories': SubCategory.objects.filter(is_active=True).count(),
     }
     pending_suggestions = ProductSuggestion.objects.filter(status='pending').select_related('subcategory__category', 'submitted_by').order_by('created_at')
     suggestion_counts = {
@@ -436,11 +439,15 @@ def admin_dashboard(request):
         'approved': ProductSuggestion.objects.filter(status='approved').count(),
         'rejected': ProductSuggestion.objects.filter(status='rejected').count(),
     }
+    pending_reports = Report.objects.filter(status='pending').select_related('product', 'alternative', 'reported_by').order_by('created_at')
+    stats['pending_suggestions'] = suggestion_counts['pending']
+    stats['pending_reports'] = pending_reports.count()
     return render(request, 'core/admin_dashboard.html', {
         'pending': pending,
         'stats': stats,
         'pending_suggestions': pending_suggestions,
         'suggestion_counts': suggestion_counts,
+        'pending_reports': pending_reports,
     })
 
 
@@ -498,6 +505,39 @@ def settings_view(request):
         'title': 'Settings Temporarily Unavailable',
         'message': 'Account settings are currently disabled. Please check back later.',
     }, status=503)
+
+
+@require_POST
+def report_item(request):
+    reason = request.POST.get('reason', '').strip()
+    details = request.POST.get('details', '').strip()
+    product_id = request.POST.get('product_id')
+    alternative_id = request.POST.get('alternative_id')
+
+    if not reason:
+        return JsonResponse({'error': 'Reason is required.'}, status=400)
+    if not product_id and not alternative_id:
+        return JsonResponse({'error': 'No target specified.'}, status=400)
+
+    report = Report(reason=reason, details=details)
+    if request.user.is_authenticated:
+        report.reported_by = request.user
+    else:
+        report.reporter_name = request.POST.get('reporter_name', '').strip()
+
+    if alternative_id:
+        try:
+            report.alternative = Alternative.objects.get(pk=alternative_id, status='approved', is_active=True)
+        except Alternative.DoesNotExist:
+            return JsonResponse({'error': 'Alternative not found.'}, status=404)
+    elif product_id:
+        try:
+            report.product = Product.objects.get(pk=product_id, is_active=True)
+        except Product.DoesNotExist:
+            return JsonResponse({'error': 'Product not found.'}, status=404)
+
+    report.save()
+    return JsonResponse({'ok': True})
 
 
 @require_POST

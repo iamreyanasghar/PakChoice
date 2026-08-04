@@ -16,26 +16,56 @@
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-10">
-        <div class="glass rounded-2xl p-5 text-center">
-            <p class="text-3xl font-black" style="color:#f59e0b">{{ stats.pending }}</p>
-            <p class="text-xs mt-1" style="color:var(--text-muted)">Pending</p>
+    <div class="glass rounded-2xl p-5 mb-10">
+        <!-- Row 1: Content totals -->
+        <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--text-muted)">Content</p>
+        <div class="flex items-center gap-4 mb-5" style="display: flex;">
+            <div class="text-center" style="flex: 1;">
+                <p class="text-3xl font-black" style="color:var(--text-primary)">{{ stats.total_products }}</p>
+                <p class="text-xs mt-1" style="color:var(--text-muted)">Products</p>
+            </div>
+            <div class="text-center" style="flex: 1;">
+                <p class="text-3xl font-black" style="color:var(--text-primary)">{{ stats.total }}</p>
+                <p class="text-xs mt-1" style="color:var(--text-muted)">Alternatives</p>
+            </div>
+            <div class="text-center" style="flex: 1;">
+                <p class="text-3xl font-black" style="color:var(--text-primary)">{{ stats.total_categories }}</p>
+                <p class="text-xs mt-1" style="color:var(--text-muted)">Categories</p>
+            </div>
+            <div class="text-center" style="flex: 1;">
+                <p class="text-3xl font-black" style="color:var(--text-primary)">{{ stats.total_subcategories }}</p>
+                <p class="text-xs mt-1" style="color:var(--text-muted)">Subcategories</p>
+            </div>
         </div>
-        <div class="glass rounded-2xl p-5 text-center">
-            <p class="text-3xl font-black" style="color:#f87171">{{ stats.needs_changes }}</p>
-            <p class="text-xs mt-1" style="color:var(--text-muted)">Needs Changes</p>
-        </div>
-        <div class="glass rounded-2xl p-5 text-center">
-            <p class="text-3xl font-black gradient-text">{{ stats.approved_week }}</p>
-            <p class="text-xs mt-1" style="color:var(--text-muted)">Approved (7d)</p>
-        </div>
-        <div class="glass rounded-2xl p-5 text-center">
-            <p class="text-3xl font-black" style="color:#ef4444">{{ stats.rejected_week }}</p>
-            <p class="text-xs mt-1" style="color:var(--text-muted)">Rejected (7d)</p>
-        </div>
-        <div class="glass rounded-2xl p-5 text-center col-span-2 sm:col-span-1">
-            <p class="text-3xl font-black" style="color:var(--text-secondary)">{{ stats.total }}</p>
-            <p class="text-xs mt-1" style="color:var(--text-muted)">Total</p>
+        <!-- Divider -->
+        <div style="border-top:1px solid var(--border)" class="mb-5"></div>
+        <!-- Row 2: Moderation queue -->
+        <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--text-muted)">Moderation Queue</p>
+        <div class="gap-4" style="display: grid; grid-template-columns: repeat(3, 1fr);">
+            <div class="text-center">
+                <p class="text-3xl font-black" style="color:#f59e0b">{{ stats.pending }}</p>
+                <p class="text-xs mt-1" style="color:var(--text-muted)">Pending Alts</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-black" style="color:#f87171">{{ stats.needs_changes }}</p>
+                <p class="text-xs mt-1" style="color:var(--text-muted)">Needs Changes</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-black gradient-text">{{ stats.approved_week }}</p>
+                <p class="text-xs mt-1" style="color:var(--text-muted)">Approved (7d)</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-black" style="color:#ef4444">{{ stats.rejected_week }}</p>
+                <p class="text-xs mt-1" style="color:var(--text-muted)">Rejected (7d)</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-black" style="color:#a78bfa">{{ stats.pending_suggestions }}</p>
+                <p class="text-xs mt-1" style="color:var(--text-muted)">Suggestions</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-black" style="color:#fb923c">{{ stats.pending_reports }}</p>
+                <p class="text-xs mt-1" style="color:var(--text-muted)">Reports</p>
+            </div>
         </div>
     </div>
 
@@ -75,7 +105,7 @@
     {% endif %}
 
     <!-- Pending suggestions -->
-    <h2 class="text-xl font-bold mt-10 mb-4">💡 Pending Product Suggestions ({{ suggestion_counts.pending }})</h2>
+    <h2 id="pending-suggestions" class="text-xl font-bold mt-10 mb-4">💡 Pending Product Suggestions ({{ suggestion_counts.pending }})</h2>
 
     {% if pending_suggestions %}
     <div class="space-y-4">
@@ -104,6 +134,47 @@
     <div class="glass rounded-2xl p-12 text-center">
         <p class="text-4xl mb-3">✅</p>
         <p class="font-medium" style="color:var(--text-secondary)">No pending product suggestions.</p>
+    </div>
+    {% endif %}
+
+    <!-- Pending reports -->
+    <h2 id="pending-reports" class="text-xl font-bold mt-10 mb-4">🚩 Pending Reports ({{ pending_reports|length }})</h2>
+
+    {% if pending_reports %}
+    <div class="space-y-4">
+        {% for r in pending_reports %}
+        <div class="glass rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                    {% if r.alternative %}
+                    <span class="tag-green text-xs px-2 py-0.5 rounded-full">Alternative</span>
+                    <span class="font-semibold">{{ r.alternative.name }}</span>
+                    <span class="text-xs" style="color:var(--text-muted)">for {{ r.alternative.product.name }}</span>
+                    {% else %}
+                    <span class="tag-red text-xs px-2 py-0.5 rounded-full">Product</span>
+                    <span class="font-semibold">{{ r.product.name }}</span>
+                    {% endif %}
+                </div>
+                <p class="text-sm" style="color:var(--text-muted)">
+                    Reason: <strong style="color:var(--text-secondary)">{{ r.get_reason_display }}</strong>
+                    · by {{ r.reported_by.username|default:r.reporter_name|default:"Anonymous" }}
+                    · {{ r.created_at|timesince }} ago
+                </p>
+                {% if r.details %}
+                <p class="text-sm mt-1 line-clamp-2" style="color:var(--text-secondary)">{{ r.details }}</p>
+                {% endif %}
+            </div>
+            <a href="{% url 'admin_report_list' %}?status=pending"
+               class="flex-shrink-0 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold transition text-center">
+                Review →
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="glass rounded-2xl p-12 text-center">
+        <p class="text-4xl mb-3">✅</p>
+        <p class="font-medium" style="color:var(--text-secondary)">No pending reports.</p>
     </div>
     {% endif %}
         </div>

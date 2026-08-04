@@ -1,0 +1,108 @@
+{% extends 'core/base.html' %}
+{% block title %}Reports — Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+        {% include 'core/admin/_nav.html' with active='moderation' %}
+        <div class="flex-1 min-w-0">
+            <div class="mb-6">
+                <h1 class="text-3xl font-black">🚩 Reports</h1>
+                <p class="text-sm mt-1" style="color:var(--text-muted)">User-submitted reports on products and alternatives</p>
+            </div>
+
+            <!-- Status tabs -->
+            <div class="flex gap-2 mb-6 flex-wrap">
+                {% for s, label in 'pending:Pending,reviewed:Reviewed,dismissed:Dismissed'|cut:''|default:'x'|slice:':0' %}{% endfor %}
+                <a href="?status=pending" class="px-4 py-2 rounded-xl text-sm font-medium transition {% if current_status == 'pending' %}bg-orange-600 text-white{% else %}glass{% endif %}">
+                    ⏳ Pending <span class="ml-1 opacity-70">({{ counts.pending }})</span>
+                </a>
+                <a href="?status=reviewed" class="px-4 py-2 rounded-xl text-sm font-medium transition {% if current_status == 'reviewed' %}bg-green-600 text-white{% else %}glass{% endif %}">
+                    ✅ Reviewed <span class="ml-1 opacity-70">({{ counts.reviewed }})</span>
+                </a>
+                <a href="?status=dismissed" class="px-4 py-2 rounded-xl text-sm font-medium transition {% if current_status == 'dismissed' %}glass{% else %}glass{% endif %}" style="{% if current_status == 'dismissed' %}opacity:1{% else %}opacity:0.7{% endif %}">
+                    🗑️ Dismissed <span class="ml-1 opacity-70">({{ counts.dismissed }})</span>
+                </a>
+            </div>
+
+            {% if reports %}
+            <div class="glass rounded-2xl overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--border)">
+                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Target</th>
+                            <th class="text-left px-5 py-3 font-semibold" style="color:var(--text-muted)">Reason</th>
+                            <th class="text-left px-5 py-3 font-semibold hidden sm:table-cell" style="color:var(--text-muted)">Reporter</th>
+                            <th class="text-left px-5 py-3 font-semibold hidden md:table-cell" style="color:var(--text-muted)">Date</th>
+                            <th class="text-right px-5 py-3 font-semibold" style="color:var(--text-muted)">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in reports %}
+                        <tr style="border-bottom:1px solid var(--border)">
+                            <td class="px-5 py-4">
+                                {% if r.alternative %}
+                                <span class="tag-green text-xs px-2 py-0.5 rounded-full mr-1">Alt</span>
+                                <span class="font-medium">{{ r.alternative.name }}</span>
+                                <p class="text-xs mt-0.5" style="color:var(--text-muted)">for {{ r.alternative.product.name }}</p>
+                                {% else %}
+                                <span class="tag-red text-xs px-2 py-0.5 rounded-full mr-1">Product</span>
+                                <span class="font-medium">{{ r.product.name }}</span>
+                                {% endif %}
+                                {% if r.details %}
+                                <p class="text-xs mt-1 line-clamp-2" style="color:var(--text-secondary)">{{ r.details }}</p>
+                                {% endif %}
+                            </td>
+                            <td class="px-5 py-4" style="color:var(--text-secondary)">{{ r.get_reason_display }}</td>
+                            <td class="px-5 py-4 hidden sm:table-cell" style="color:var(--text-muted)">
+                                {{ r.reported_by.username|default:r.reporter_name|default:"Anonymous" }}
+                            </td>
+                            <td class="px-5 py-4 hidden md:table-cell" style="color:var(--text-muted)">{{ r.created_at|timesince }} ago</td>
+                            <td class="px-5 py-4">
+                                {% if r.status == 'pending' %}
+                                <div class="flex items-center justify-end gap-2 flex-wrap">
+                                    {% if r.alternative %}
+                                    <a href="{% url 'admin_alternative_delete' r.alternative.pk %}" class="px-3 py-1.5 rounded-lg glass hover:opacity-80 text-xs font-semibold transition" style="color:#f87171">🗑️ Delete Alt</a>
+                                    {% else %}
+                                    <a href="{% url 'admin_product_edit' r.product.pk %}" class="px-3 py-1.5 rounded-lg glass hover:opacity-80 text-xs font-semibold transition" style="color:var(--text-secondary)">✏️ Edit</a>
+                                    <a href="{% url 'admin_product_delete' r.product.pk %}" class="px-3 py-1.5 rounded-lg glass hover:opacity-80 text-xs font-semibold transition" style="color:#f87171">🗑️ Delete</a>
+                                    {% endif %}
+                                    <form method="post" action="{% url 'admin_report_action' r.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="reviewed">
+                                        <button type="submit" class="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-semibold transition">✅ Reviewed</button>
+                                    </form>
+                                    <form method="post" action="{% url 'admin_report_action' r.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="dismissed">
+                                        <button type="submit" class="px-3 py-1.5 rounded-lg glass hover:opacity-80 text-xs font-semibold transition" style="color:var(--text-muted)">Dismiss</button>
+                                    </form>
+                                </div>
+                                {% else %}
+                                <span class="text-xs px-2 py-1 rounded-full glass" style="color:var(--text-muted)">{{ r.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if reports.has_other_pages %}
+            <div class="flex justify-center gap-2 mt-6">
+                {% if reports.has_previous %}<a href="?status={{ current_status }}&page={{ reports.previous_page_number }}" class="px-4 py-2 glass rounded-xl text-sm">← Prev</a>{% endif %}
+                <span class="px-4 py-2 text-sm" style="color:var(--text-muted)">{{ reports.number }} / {{ reports.paginator.num_pages }}</span>
+                {% if reports.has_next %}<a href="?status={{ current_status }}&page={{ reports.next_page_number }}" class="px-4 py-2 glass rounded-xl text-sm">Next →</a>{% endif %}
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="glass rounded-2xl p-12 text-center">
+                <p class="text-4xl mb-3">✅</p>
+                <p class="font-medium" style="color:var(--text-secondary)">No {{ current_status }} reports.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

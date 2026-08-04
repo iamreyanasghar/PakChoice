@@ -90,6 +90,9 @@
                 <!-- Theme toggle -->
                 <button id="themeToggle" onclick="toggleTheme()" class="theme-toggle" aria-label="Toggle theme">☀️</button>
 
+                <!-- Mobile search toggle -->
+                <button id="mobileSearchBtn" class="md:hidden" aria-label="Toggle search" style="width:2.25rem; height:2.25rem; border-radius:0.625rem; background:var(--bg-card); border:1px solid var(--border); cursor:pointer; font-size:1.125rem; transition:background 0.2s, border-color 0.2s, transform 0.2s; text-align:center; line-height:2.25rem;">🔍</button>
+
                 {% if user.is_authenticated and user.is_staff %}
                     <!-- Profile dropdown (staff only) -->
                     <div class="relative" id="profileDropdown">
@@ -184,7 +187,7 @@
         </div>
 
         <!-- Mobile search bar -->
-        <div id="mobileSearchBar" class="pb-3 md:hidden">
+        <div id="mobileSearchBar" class="pb-3 md:hidden hidden">
             <form action="{% url 'search' %}" method="get" class="relative" id="mobileSearchForm">
                 <div class="relative">
                     <input type="text" name="q" value="{{ request.GET.q }}"

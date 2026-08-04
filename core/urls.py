@@ -46,6 +46,7 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('upvote/<int:pk>/', views.upvote_alternative, name='upvote'),
+    path('report/', views.report_item, name='report_item'),
 
     # Account
     path('account/profile/', views.profile_view, name='profile'),
@@ -62,6 +63,8 @@ urlpatterns = [
     path('suggest/', views.suggest_product, name='suggest_product'),
     path('admin-panel/suggestions/', admin_views.admin_suggestion_list, name='admin_suggestion_list'),
     path('admin-panel/suggestions/<int:pk>/', admin_views.admin_suggestion_moderate, name='admin_suggestion_moderate'),
+    path('admin-panel/reports/', admin_views.admin_report_list, name='admin_report_list'),
+    path('admin-panel/reports/<int:pk>/action/', admin_views.admin_report_action, name='admin_report_action'),
 
     # Moderation
     path('admin-panel/moderation/', views.admin_dashboard, name='admin_dashboard'),

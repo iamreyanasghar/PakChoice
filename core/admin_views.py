@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.http import Http404
 from datetime import timedelta
-from .models import Category, SubCategory, Product, Alternative, UserProfile, ProductSuggestion
+from .models import Category, SubCategory, Product, Alternative, UserProfile, ProductSuggestion, Report
 from .admin_forms import CategoryForm, SubCategoryForm, ProductForm, AlternativeForm, AlternativeModerationForm, UserEditForm, UserProfileEditForm
 from .views import download_image_from_url
 
@@ -808,3 +808,43 @@ def admin_suggestion_moderate(request, pk):
         return redirect('admin_dashboard')
 
     return render(request, 'core/admin/suggestion_detail.html', {'suggestion': suggestion})
+
+
+# ── Reports ────────────────────────────────────────────────
+
+@user_passes_test(_admin_required, login_url='/admin')
+def admin_report_list(request):
+    status_filter = request.GET.get('status', 'pending')
+    qs = Report.objects.select_related('product', 'alternative', 'reported_by', 'reviewed_by')
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    paginator = Paginator(qs, 20)
+    reports = paginator.get_page(request.GET.get('page'))
+    counts = {
+        'pending': Report.objects.filter(status='pending').count(),
+        'reviewed': Report.objects.filter(status='reviewed').count(),
+        'dismissed': Report.objects.filter(status='dismissed').count(),
+    }
+    return render(request, 'core/admin/report_list.html', {
+        'reports': reports,
+        'current_status': status_filter,
+        'counts': counts,
+    })
+
+
+@user_passes_test(_admin_required, login_url='/admin')
+def admin_report_action(request, pk):
+    try:
+        report = get_object_or_404(Report, pk=pk)
+    except Http404:
+        return render(request, 'core/404.html', status=404)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action in ('reviewed', 'dismissed'):
+            report.status = action
+            report.reviewed_by = request.user
+            report.reviewed_at = timezone.now()
+            report.save()
+            messages.success(request, f'✅ Report marked as {action}.')
+        return redirect('admin_report_list')
+    return render(request, 'core/404.html', status=404)

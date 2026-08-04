@@ -195,6 +195,38 @@ class ProductSuggestion(models.Model):
         return f"{self.product_name} → {self.alt_name} ({self.status})"
 
 
+class Report(models.Model):
+    REASON_CHOICES = [
+        ('incorrect_info', 'Incorrect Information'),
+        ('not_pakistani', 'Not a Pakistani Product'),
+        ('duplicate', 'Duplicate Entry'),
+        ('inappropriate', 'Inappropriate Content'),
+        ('other', 'Other'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('reviewed', 'Reviewed'),
+        ('dismissed', 'Dismissed'),
+    ]
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True, related_name='reports')
+    alternative = models.ForeignKey(Alternative, on_delete=models.CASCADE, null=True, blank=True, related_name='reports')
+    reason = models.CharField(max_length=20, choices=REASON_CHOICES)
+    details = models.TextField(blank=True)
+    reported_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reports')
+    reporter_name = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_reports')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        target = self.product or self.alternative
+        return f"Report on {target} ({self.reason})"
+
+
 class Vote(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     alternative = models.ForeignKey(Alternative, on_delete=models.CASCADE)
