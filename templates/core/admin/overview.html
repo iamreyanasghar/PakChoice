@@ -56,7 +56,7 @@
         <!-- Main Content -->
         <div class="flex-1 min-w-0">
             <!-- Stats Grid -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
                 <div class="glass rounded-2xl p-5 text-center admin-stat-card">
                     <p class="text-3xl font-black gradient-text">{{ stats.categories }}</p>
                     <p class="text-xs mt-1" style="color:var(--text-muted)">Categories</p>
@@ -70,24 +70,16 @@
                     <p class="text-xs mt-1" style="color:var(--text-muted)">Products</p>
                 </div>
                 <div class="glass rounded-2xl p-5 text-center admin-stat-card">
-                    <p class="text-3xl font-black" style="color:#22c55e">{{ stats.products_verified }}</p>
-                    <p class="text-xs mt-1" style="color:var(--text-muted)">Verified</p>
-                </div>
-                <div class="glass rounded-2xl p-5 text-center admin-stat-card">
                     <p class="text-3xl font-black" style="color:#a78bfa">{{ stats.alternatives }}</p>
                     <p class="text-xs mt-1" style="color:var(--text-muted)">Total Alternatives</p>
                 </div>
                 <div class="glass rounded-2xl p-5 text-center admin-stat-card">
-                    <p class="text-3xl font-black" style="color:#fbbf24">{{ stats.alternatives_pending }}</p>
-                    <p class="text-xs mt-1" style="color:var(--text-muted)">Pending</p>
+                    <p class="text-3xl font-black" style="color:#22c55e">{{ stats.products_verified }}</p>
+                    <p class="text-xs mt-1" style="color:var(--text-muted)">Verified</p>
                 </div>
                 <div class="glass rounded-2xl p-5 text-center admin-stat-card">
                     <p class="text-3xl font-black" style="color:#34d399">{{ stats.alternatives_approved }}</p>
                     <p class="text-xs mt-1" style="color:var(--text-muted)">Approved</p>
-                </div>
-                <div class="glass rounded-2xl p-5 text-center admin-stat-card">
-                    <p class="text-3xl font-black" style="color:#818cf8">{{ stats.users }}</p>
-                    <p class="text-xs mt-1" style="color:var(--text-muted)">Users</p>
                 </div>
             </div>
 

@@ -1,6 +1,13 @@
 {% extends 'core/base.html' %}
 {% block title %}Moderation Dashboard — BuyPakistani{% endblock %}
 
+{% block extra_css %}
+<style>
+.admin-stat-card { transition: all 0.2s; }
+.admin-stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(34,197,94,0.15); }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex flex-col lg:flex-row gap-8">
@@ -10,62 +17,41 @@
         <!-- Main Content -->
         <div class="flex-1 min-w-0">
 
-    <div class="mb-8">
-        <h1 class="text-3xl font-black">🛡️ Moderation Dashboard</h1>
-        <p class="text-sm mt-1" style="color:var(--text-muted)">Review and manage user-submitted alternatives</p>
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-black">🛡️ Moderation Dashboard</h1>
+            <p class="text-sm mt-1" style="color:var(--text-muted)">Review and manage user-submitted alternatives</p>
+        </div>
+        <div id="auto-refresh-timer" class="text-xs" style="color:var(--text-muted)">
+            Auto-refreshing in <span id="countdown">30</span>s
+        </div>
     </div>
 
-    <!-- Stats -->
-    <div class="glass rounded-2xl p-5 mb-10">
-        <!-- Row 1: Content totals -->
-        <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--text-muted)">Content</p>
-        <div class="flex items-center gap-4 mb-5" style="display: flex;">
-            <div class="text-center" style="flex: 1;">
-                <p class="text-3xl font-black" style="color:var(--text-primary)">{{ stats.total_products }}</p>
-                <p class="text-xs mt-1" style="color:var(--text-muted)">Products</p>
-            </div>
-            <div class="text-center" style="flex: 1;">
-                <p class="text-3xl font-black" style="color:var(--text-primary)">{{ stats.total }}</p>
-                <p class="text-xs mt-1" style="color:var(--text-muted)">Alternatives</p>
-            </div>
-            <div class="text-center" style="flex: 1;">
-                <p class="text-3xl font-black" style="color:var(--text-primary)">{{ stats.total_categories }}</p>
-                <p class="text-xs mt-1" style="color:var(--text-muted)">Categories</p>
-            </div>
-            <div class="text-center" style="flex: 1;">
-                <p class="text-3xl font-black" style="color:var(--text-primary)">{{ stats.total_subcategories }}</p>
-                <p class="text-xs mt-1" style="color:var(--text-muted)">Subcategories</p>
-            </div>
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+        <div class="glass rounded-2xl p-5 text-center admin-stat-card">
+            <p class="text-3xl font-black" style="color:#fbbf24">{{ stats.pending }}</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Pending Alts</p>
         </div>
-        <!-- Divider -->
-        <div style="border-top:1px solid var(--border)" class="mb-5"></div>
-        <!-- Row 2: Moderation queue -->
-        <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--text-muted)">Moderation Queue</p>
-        <div class="gap-4" style="display: grid; grid-template-columns: repeat(3, 1fr);">
-            <div class="text-center">
-                <p class="text-3xl font-black" style="color:#f59e0b">{{ stats.pending }}</p>
-                <p class="text-xs mt-1" style="color:var(--text-muted)">Pending Alts</p>
-            </div>
-            <div class="text-center">
-                <p class="text-3xl font-black" style="color:#f87171">{{ stats.needs_changes }}</p>
-                <p class="text-xs mt-1" style="color:var(--text-muted)">Needs Changes</p>
-            </div>
-            <div class="text-center">
-                <p class="text-3xl font-black gradient-text">{{ stats.approved_week }}</p>
-                <p class="text-xs mt-1" style="color:var(--text-muted)">Approved (7d)</p>
-            </div>
-            <div class="text-center">
-                <p class="text-3xl font-black" style="color:#ef4444">{{ stats.rejected_week }}</p>
-                <p class="text-xs mt-1" style="color:var(--text-muted)">Rejected (7d)</p>
-            </div>
-            <div class="text-center">
-                <p class="text-3xl font-black" style="color:#a78bfa">{{ stats.pending_suggestions }}</p>
-                <p class="text-xs mt-1" style="color:var(--text-muted)">Suggestions</p>
-            </div>
-            <div class="text-center">
-                <p class="text-3xl font-black" style="color:#fb923c">{{ stats.pending_reports }}</p>
-                <p class="text-xs mt-1" style="color:var(--text-muted)">Reports</p>
-            </div>
+        <div class="glass rounded-2xl p-5 text-center admin-stat-card">
+            <p class="text-3xl font-black" style="color:#f87171">{{ stats.needs_changes }}</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Needs Changes</p>
+        </div>
+        <div class="glass rounded-2xl p-5 text-center admin-stat-card">
+            <p class="text-3xl font-black" style="color:#34d399">{{ stats.approved_week }}</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Approved (7d)</p>
+        </div>
+        <div class="glass rounded-2xl p-5 text-center admin-stat-card">
+            <p class="text-3xl font-black" style="color:#ef4444">{{ stats.rejected_week }}</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Rejected (7d)</p>
+        </div>
+        <div class="glass rounded-2xl p-5 text-center admin-stat-card">
+            <p class="text-3xl font-black" style="color:#a78bfa">{{ stats.pending_suggestions }}</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Suggestions</p>
+        </div>
+        <div class="glass rounded-2xl p-5 text-center admin-stat-card">
+            <p class="text-3xl font-black" style="color:#fb923c">{{ stats.pending_reports }}</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Reports</p>
         </div>
     </div>
 
@@ -180,4 +166,43 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh moderation dashboard every 30 seconds (only when tab is visible)
+let refreshInterval;
+
+function startRefresh() {
+    refreshInterval = setInterval(() => {
+        location.reload();
+    }, 30000);
+}
+
+function stopRefresh() {
+    clearInterval(refreshInterval);
+}
+
+// Pause when tab is hidden, resume when visible
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        stopRefresh();
+    } else {
+        startRefresh();
+    }
+});
+
+startRefresh();
+
+// Countdown timer
+let secondsLeft = 30;
+const countdownEl = document.getElementById('countdown');
+const countdownInterval = setInterval(() => {
+    secondsLeft--;
+    if (countdownEl) countdownEl.textContent = secondsLeft;
+    if (secondsLeft <= 0) {
+        clearInterval(countdownInterval);
+    }
+}, 1000);
+</script>
 {% endblock %}

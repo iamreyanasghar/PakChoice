@@ -304,6 +304,17 @@ html.light .dropdown {
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
+/* ---------- Dropdown link/button hover (more visible than white/10) ---------- */
+.dropdown a:hover,
+.dropdown button:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+html.light .dropdown a:hover,
+html.light .dropdown button:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
 /* ---------- Light mode glass card fix ---------- */
 html.light .glass {
   background: rgba(255, 255, 255, 0.9);

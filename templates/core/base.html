@@ -141,13 +141,10 @@
                                 </a>
                             </div>
                             <div class="py-1" style="border-top:1px solid var(--border)">
-                                <form method="post" action="{% url 'logout' %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="flex items-center gap-3 px-4 py-2.5 text-sm w-full text-left transition hover:bg-white/10 hover:text-red-400" style="color:var(--text-secondary)">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-                                        Logout
-                                    </button>
-                                </form>
+                                <a href="{% url 'logout' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm w-full text-left transition hover:bg-white/10 hover:text-red-400" style="color:var(--text-secondary);">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                    Logout
+                                </a>
                             </div>
                         </div>
                     </div>

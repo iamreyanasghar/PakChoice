@@ -1,0 +1,16 @@
+{% extends 'core/base.html' %}
+{% block title %}Logging out...{% endblock %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center">
+    <div class="text-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+        <p class="text-lg" style="color:var(--text-secondary)">Logging you out...</p>
+    </div>
+    <form method="post" action="{% url 'logout' %}" id="logoutForm">
+        {% csrf_token %}
+    </form>
+    <script>
+        document.getElementById('logoutForm').submit();
+    </script>
+</div>
+{% endblock %}

@@ -50,9 +50,7 @@ def admin_overview(request):
         'products': Product.objects.count(),
         'products_verified': Product.objects.filter(verified=True).count(),
         'alternatives': Alternative.objects.count(),
-        'alternatives_pending': Alternative.objects.filter(status='pending').count(),
         'alternatives_approved': Alternative.objects.filter(status='approved').count(),
-        'users': User.objects.count(),
     }
 
     recent_alternatives = Alternative.objects.select_related(

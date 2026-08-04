@@ -372,10 +372,12 @@ def login_view(request):
     }, status=503)
 
 
-@require_POST
 def logout_view(request):
-    logout(request)
-    return redirect('home')
+    """Handle logout: GET renders a confirmation page, POST performs logout."""
+    if request.method == 'POST':
+        logout(request)
+        return redirect('home')
+    return render(request, 'core/logout.html')
 
 
 @rate_limit(key_prefix='admin_login', limit=5, period=300)
